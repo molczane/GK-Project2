@@ -1,6 +1,7 @@
 package molczane.gk.project2.view
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +14,7 @@ import androidx.compose.material.Slider
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import molczane.gk.project2.model.Triangle
@@ -27,13 +29,14 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
 
         // Canvas occupying 80% of the available width
         Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
-            // Sort triangles by average Z depth
+            // Sort triangles by average Z depth for 3D-like rendering
             val sortedTriangles = mesh.triangles.sortedByDescending { triangle ->
                 triangle.vertices.map { it.position.z }.average()
             }
 
             // Draw each triangle
             sortedTriangles.forEach { triangle ->
+                // Apply rotation to each vertex in the triangle
                 val transformedVertices = triangle.vertices.map {
                     rotatePoint(it, viewModel.rotationAlpha, viewModel.rotationBeta)
                 }
@@ -41,6 +44,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 // Create a new Triangle with transformed vertices
                 val transformedTriangle = Triangle(transformedVertices)
 
+                // Draw the transformed triangle with lighting applied
                 drawTriangle(transformedTriangle, viewModel.calculateLighting(transformedTriangle))
             }
         }
@@ -61,7 +65,6 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 valueRange = -45f..45f
             )
 
-            // Spacer for padding between sliders
             Spacer(modifier = Modifier.height(16.dp))
 
             // Beta rotation slider
@@ -72,50 +75,30 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 valueRange = -10f..10f
             )
 
-            // Spacer for padding between sliders
             Spacer(modifier = Modifier.height(16.dp))
 
             // Triangulation accuracy slider
             Text(text = "Triangulation Accuracy", fontSize = 14.sp)
             Slider(
                 value = viewModel.triangulationAccuracy.toFloat(),
-                onValueChange = { viewModel.triangulationAccuracy = it.toInt() },
+                onValueChange = { newAccuracy ->
+                    viewModel.triangulationAccuracy = newAccuracy.toInt()
+                    viewModel.updateMesh() // Regenerate the mesh with the new accuracy
+                },
                 valueRange = 1f..10f
             )
         }
     }
 }
 
+
 //@Composable
 //fun BezierSurfaceScreen(viewModel: BezierViewModel) {
-//    Column {
-//        // Alpha rotation slider
-//        Text(text = "Alpha Rotation")
-//        Slider(
-//            value = viewModel.rotationAlpha,
-//            onValueChange = { viewModel.updateRotation(it, viewModel.rotationBeta) },
-//            valueRange = -45f..45f
-//        )
+//    Row(modifier = Modifier.fillMaxSize()) {
+//        val mesh by viewModel.mesh.collectAsState()
 //
-//        // Beta rotation slider
-//        Text(text = "Beta Rotation")
-//        Slider(
-//            value = viewModel.rotationBeta,
-//            onValueChange = { viewModel.updateRotation(viewModel.rotationAlpha, it) },
-//            valueRange = -10f..10f
-//        )
-//
-//        // Triangulation accuracy slider
-//        Text(text = "Triangulation Accuracy")
-//        Slider(
-//            value = viewModel.triangulationAccuracy.toFloat(),
-//            onValueChange = { viewModel.triangulationAccuracy = it.toInt() },
-//            valueRange = 1f..10f
-//        )
-//
-//        // Canvas to display the mesh
-//        val mesh by viewModel.mesh.collectAsState() // collect the mesh state outside the Canvas
-//        Canvas(modifier = Modifier.fillMaxSize()) {
+//        // Canvas occupying 80% of the available width
+//        Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
 //            // Sort triangles by average Z depth
 //            val sortedTriangles = mesh.triangles.sortedByDescending { triangle ->
 //                triangle.vertices.map { it.position.z }.average()
@@ -132,6 +115,46 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
 //
 //                drawTriangle(transformedTriangle, viewModel.calculateLighting(transformedTriangle))
 //            }
+//        }
+//
+//        // Sliders occupying 20% of the available width
+//        Column(
+//            modifier = Modifier
+//                .fillMaxHeight()
+//                .weight(0.2f)
+//                .padding(16.dp)
+//                .background(Color.LightGray),
+//            verticalArrangement = Arrangement.Center
+//        ) {
+//            // Alpha rotation slider
+//            Text(text = "Alpha Rotation", fontSize = 14.sp)
+//            Slider(
+//                value = viewModel.rotationAlpha,
+//                onValueChange = { viewModel.updateRotation(it, viewModel.rotationBeta) },
+//                valueRange = -45f..45f
+//            )
+//
+//            // Spacer for padding between sliders
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            // Beta rotation slider
+//            Text(text = "Beta Rotation", fontSize = 14.sp)
+//            Slider(
+//                value = viewModel.rotationBeta,
+//                onValueChange = { viewModel.updateRotation(viewModel.rotationAlpha, it) },
+//                valueRange = -10f..10f
+//            )
+//
+//            // Spacer for padding between sliders
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            // Triangulation accuracy slider
+//            Text(text = "Triangulation Accuracy", fontSize = 14.sp)
+//            Slider(
+//                value = viewModel.triangulationAccuracy.toFloat(),
+//                onValueChange = { viewModel.triangulationAccuracy = it.toInt() },
+//                valueRange = 1f..10f
+//            )
 //        }
 //    }
 //}

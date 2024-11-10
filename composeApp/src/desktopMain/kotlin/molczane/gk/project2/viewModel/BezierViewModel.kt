@@ -29,13 +29,21 @@ class BezierViewModel : ViewModel() {
     // Camera/view direction vector (assuming it's from the z-axis)
     private val viewDirection = Vector3(0.0f, 0.0f, 1.0f).normalize()
 
+    // Define control points for the Bezier surface with values in the range -5 to 5
+    private val controlPoints = listOf(
+        Vector3(-5f, -5f, 0f), Vector3(-1.65f, -5f, 1f), Vector3(1.65f, -5f, 0.5f), Vector3(5f, -5f, 0f),
+        Vector3(-5f, -1.65f, 1.5f), Vector3(-1.65f, -1.65f, 2.5f), Vector3(1.65f, -1.65f, 2f), Vector3(5f, -1.65f, 1f),
+        Vector3(-5f, 1.65f, 2f), Vector3(-1.65f, 1.65f, 3f), Vector3(1.65f, 1.65f, 2.5f), Vector3(5f, 1.65f, 1.5f),
+        Vector3(-5f, 5f, 0f), Vector3(-1.65f, 5f, 1f), Vector3(1.65f, 5f, 0.5f), Vector3(5f, 5f, 0f)
+    )
 
-    private val _mesh = MutableStateFlow(generateSampleMesh())
-    val mesh: StateFlow<Mesh> get() = _mesh
 
     var rotationAlpha by mutableStateOf(0f)
     var rotationBeta by mutableStateOf(0f)
-    var triangulationAccuracy by mutableStateOf(3) // Placeholder for triangulation accuracy slider
+    var triangulationAccuracy by mutableStateOf(10) // Accuracy of the triangulation
+
+    private val _mesh = MutableStateFlow(generateBezierMesh())
+    val mesh: StateFlow<Mesh> get() = _mesh
 
     // To be uncommented when the file is ready
     // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")
@@ -45,12 +53,58 @@ class BezierViewModel : ViewModel() {
         // Define sample vertices using Vector3 coordinates
         val vertices = listOf(
             Vertex(Vector3(-0.5f, -0.5f, 0f)),
-            Vertex(Vector3(0.5f, -0.5f, 0f)),
-            Vertex(Vector3(0f, 0.5f, 0f))
+            Vertex(Vector3(0.5f, -0.5f, 1f)),
+            Vertex(Vector3(0f, 0.5f, 2f))
         )
         // Create a list of triangles using these vertices
         val triangles = listOf(Triangle(vertices))
         return Mesh(triangles)
+    }
+
+    // Function to generate points on the Bezier surface
+    private fun interpolateBezierSurface(u: Float, v: Float): Vector3 {
+        val pointsU = (0..3).map { i ->
+            val pointsV = (0..3).map { j -> controlPoints[i * 4 + j] }
+            interpolateBezier1D(pointsV, v)
+        }
+        return interpolateBezier1D(pointsU, u)
+    }
+
+    // 1D Bezier interpolation
+    private fun interpolateBezier1D(points: List<Vector3>, t: Float): Vector3 {
+        var tempPoints = points
+        for (i in 1 until points.size) {
+            tempPoints = tempPoints.windowed(2, 1) { (p1, p2) ->
+                p1 * (1 - t) + p2 * t
+            }
+        }
+        return tempPoints[0]
+    }
+
+    // Generate a mesh for the Bezier surface based on the control points
+    private fun generateBezierMesh(): Mesh {
+        val triangles = mutableListOf<Triangle>()
+        val step = 1f / triangulationAccuracy
+        for (i in 0 until triangulationAccuracy) {
+            for (j in 0 until triangulationAccuracy) {
+                val u = i * step
+                val v = j * step
+                val p1 = Vertex(interpolateBezierSurface(u, v))
+                val p2 = Vertex(interpolateBezierSurface(u + step, v))
+                val p3 = Vertex(interpolateBezierSurface(u, v + step))
+                val p4 = Vertex(interpolateBezierSurface(u + step, v + step))
+
+                // Create two triangles for each quad
+                triangles.add(Triangle(listOf(p1, p2, p3)))
+                triangles.add(Triangle(listOf(p2, p4, p3)))
+            }
+        }
+        return Mesh(triangles)
+    }
+
+    // Update mesh based on the triangulation accuracy
+    fun updateMesh() {
+        _mesh.value = generateBezierMesh()
     }
 
     // Method to update rotation based on user input
@@ -58,11 +112,6 @@ class BezierViewModel : ViewModel() {
         rotationAlpha = alpha
         rotationBeta = beta
         updateMesh() // Recompute mesh based on new rotation values
-    }
-
-    // Placeholder for updating the mesh
-    private fun updateMesh() {
-        // Implement rotation transformation and other calculations here
     }
 
     fun calculateLighting(triangle: Triangle): Color {
