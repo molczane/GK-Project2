@@ -1,18 +1,17 @@
 package molczane.gk.project2.viewModel
 
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import molczane.gk.project2.model.Mesh
+ import molczane.gk.project2.model.Mesh
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.model.Vector3
 import molczane.gk.project2.model.Vertex
 import kotlin.math.max
 import kotlin.math.pow
+import molczane.gk.project2.utils.functions.cross
+import molczane.gk.project2.utils.functions.times
 
 class BezierViewModel : ViewModel() {
 
@@ -37,29 +36,18 @@ class BezierViewModel : ViewModel() {
         Vector3(-5f, 5f, 0f), Vector3(-1.65f, 5f, 1f), Vector3(1.65f, 5f, 0.5f), Vector3(5f, 5f, 0f)
     )
 
+    private val _rotationAlpha = MutableStateFlow(0f)
+    val rotationAlpha: StateFlow<Float> = _rotationAlpha
 
-    var rotationAlpha by mutableStateOf(0f)
-    var rotationBeta by mutableStateOf(0f)
-    var triangulationAccuracy by mutableStateOf(10) // Accuracy of the triangulation
+    private val _rotationBeta = MutableStateFlow(0f)
+    val rotationBeta: StateFlow<Float> = _rotationBeta
+
+    private val _triangulationAccuracy = MutableStateFlow(10)
+    val triangulationAccuracy: StateFlow<Int> = _triangulationAccuracy
+
 
     private val _mesh = MutableStateFlow(generateBezierMesh())
     val mesh: StateFlow<Mesh> get() = _mesh
-
-    // To be uncommented when the file is ready
-    // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")
-    // Sample function to create a basic mesh for testing purposes
-    // Generate a sample mesh with realistic Vector3 vertices for testing
-    private fun generateSampleMesh(): Mesh {
-        // Define sample vertices using Vector3 coordinates
-        val vertices = listOf(
-            Vertex(Vector3(-0.5f, -0.5f, 0f)),
-            Vertex(Vector3(0.5f, -0.5f, 1f)),
-            Vertex(Vector3(0f, 0.5f, 2f))
-        )
-        // Create a list of triangles using these vertices
-        val triangles = listOf(Triangle(vertices))
-        return Mesh(triangles)
-    }
 
     // Function to generate points on the Bezier surface
     private fun interpolateBezierSurface(u: Float, v: Float): Vector3 {
@@ -84,9 +72,9 @@ class BezierViewModel : ViewModel() {
     // Generate a mesh for the Bezier surface based on the control points
     private fun generateBezierMesh(): Mesh {
         val triangles = mutableListOf<Triangle>()
-        val step = 1f / triangulationAccuracy
-        for (i in 0 until triangulationAccuracy) {
-            for (j in 0 until triangulationAccuracy) {
+        val step = 1f / _triangulationAccuracy.value
+        for (i in 0 until _triangulationAccuracy.value) {
+            for (j in 0 until _triangulationAccuracy.value) {
                 val u = i * step
                 val v = j * step
                 val p1 = Vertex(interpolateBezierSurface(u, v))
@@ -102,16 +90,16 @@ class BezierViewModel : ViewModel() {
         return Mesh(triangles)
     }
 
-    // Update mesh based on the triangulation accuracy
-    fun updateMesh() {
-        _mesh.value = generateBezierMesh()
+    // Update rotation without regenerating mesh
+    fun updateRotation(alpha: Float, beta: Float) {
+        _rotationAlpha.value = alpha
+        _rotationBeta.value = beta
+        // Don't call updateMesh() here as rotation doesn't affect the mesh geometry
     }
 
-    // Method to update rotation based on user input
-    fun updateRotation(alpha: Float, beta: Float) {
-        rotationAlpha = alpha
-        rotationBeta = beta
-        updateMesh() // Recompute mesh based on new rotation values
+    fun updateTriangulation(accuracy: Int) {
+        _triangulationAccuracy.value = accuracy
+        _mesh.value = generateBezierMesh() // Regenerate mesh with new accuracy
     }
 
     fun calculateLighting(triangle: Triangle): Color {
@@ -145,11 +133,25 @@ class BezierViewModel : ViewModel() {
         return Color(r, g, b)
     }
 
-    // Extension functions for vector operations
-    private operator fun Vector3.times(other: Vector3) = Vector3(x * other.x, y * other.y, z * other.z)
-    private fun Vector3.cross(other: Vector3) = Vector3(
-        y * other.z - z * other.y,
-        z * other.x - x * other.z,
-        x * other.y - y * other.x
-    )
+    // To be uncommented when the file is ready
+    // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")
+
+    // Sample function to create a basic mesh for testing purposes
+    // Generate a sample mesh with realistic Vector3 vertices for testing
+    private fun generateSampleMesh(): Mesh {
+        // Define sample vertices using Vector3 coordinates
+        val vertices = listOf(
+            Vertex(Vector3(-0.5f, -0.5f, 0f)),
+            Vertex(Vector3(0.5f, -0.5f, 1f)),
+            Vertex(Vector3(0f, 0.5f, 2f))
+        )
+        // Create a list of triangles using these vertices
+        val triangles = listOf(Triangle(vertices))
+        return Mesh(triangles)
+    }
+
+    // Update mesh based on the triangulation accuracy
+    fun updateMesh() {
+        _mesh.value = generateBezierMesh()
+    }
 }
