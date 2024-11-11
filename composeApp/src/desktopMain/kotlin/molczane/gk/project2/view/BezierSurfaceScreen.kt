@@ -69,7 +69,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             Slider(
                 value = rotationAlpha,
                 onValueChange = { viewModel.updateRotation(it, rotationBeta) },
-                valueRange = -3.14159f..3.14159f,
+                valueRange = -0.7853982f..0.7853982f,
                 modifier = Modifier.padding(8.dp)
             )
 
@@ -83,7 +83,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             Slider(
                 value = rotationBeta,
                 onValueChange = { viewModel.updateRotation(rotationAlpha, it) },
-                valueRange = -3.14159f..3.14159f,
+                valueRange = 0f..0.17453292f,
                 modifier = Modifier.padding(8.dp)
             )
 
