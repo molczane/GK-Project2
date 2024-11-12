@@ -3,6 +3,7 @@ package molczane.gk.project2.utils.functions
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import molczane.gk.project2.model.Triangle
@@ -18,7 +19,7 @@ fun DrawScope.drawTriangle(triangle: Triangle, color: Color, outlineOnly: Boolea
     if (outlineOnly) {
         drawPath(path, color, style = Stroke(width = 2.dp.toPx()))
     } else {
-        drawPath(path, color)
+        drawPath(path, color, style = Fill)
     }
 }
 

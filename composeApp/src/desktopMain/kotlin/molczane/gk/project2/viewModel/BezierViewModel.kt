@@ -1,6 +1,5 @@
 package molczane.gk.project2.viewModel
 
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,16 +8,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import molczane.gk.project2.model.Material
 import molczane.gk.project2.model.Mesh
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.model.Vector3
 import molczane.gk.project2.model.Vertex
-import kotlin.math.max
 import kotlin.math.pow
 import molczane.gk.project2.utils.functions.cross
-import molczane.gk.project2.utils.functions.times
-import java.lang.Math.pow
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -35,22 +30,37 @@ class BezierViewModel : ViewModel() {
     val currentTime: StateFlow<Float> = _currentTime
 
     private var animationJob: Job? = null
+    private var lastFrameTime: Long = 0
 
     init {
         startLightAnimation()
     }
 
+//        private fun startLightAnimation() {
+//            animationJob = viewModelScope.launch {
+//                var startTime = System.nanoTime()
+//                while (true) {
+//                    val currentNanoTime = System.nanoTime()
+//                    val elapsedSeconds = (currentNanoTime - startTime) / 1_000_000_000f
+//                    _currentTime.value = elapsedSeconds * 0.2f  // Adjust multiplier to change speed
+//                    delay(50) // Approximately 60 FPS
+//                }
+//            }
+//        }
+
     private fun startLightAnimation() {
+        lastFrameTime = System.nanoTime()
         animationJob = viewModelScope.launch {
-            var startTime = System.nanoTime()
             while (true) {
                 val currentNanoTime = System.nanoTime()
-                val elapsedSeconds = (currentNanoTime - startTime) / 1_000_000_000f
-                _currentTime.value = elapsedSeconds * 0.5f  // Adjust multiplier to change speed
-                delay(16) // Approximately 60 FPS
+                val deltaTime = (currentNanoTime - lastFrameTime) / 1_000_000_000f
+                _currentTime.value += deltaTime
+                lastFrameTime = currentNanoTime
+                delay(16)
             }
         }
     }
+
 
     // Make sure to cancel the animation when the ViewModel is cleared
     override fun onCleared() {
@@ -65,12 +75,27 @@ class BezierViewModel : ViewModel() {
     private val viewDirection = Vector3(0.0f, 0.0f, 1.0f).normalize()
 
     // Define control points for the Bezier surface with values in the range -5 to 5
+//    private val controlPoints = listOf(
+//        Vector3(-5f, -5f, 0f), Vector3(-1.65f, -5f, 1f), Vector3(1.65f, -5f, 0.5f), Vector3(5f, -5f, 0f),
+//        Vector3(-5f, -1.65f, 1.5f), Vector3(-1.65f, -1.65f, 2.5f), Vector3(1.65f, -1.65f, 2f), Vector3(5f, -1.65f, 1f),
+//        Vector3(-5f, 1.65f, 2f), Vector3(-1.65f, 1.65f, 3f), Vector3(1.65f, 1.65f, 2.5f), Vector3(5f, 1.65f, 1.5f),
+//        Vector3(-5f, 5f, 0f), Vector3(-1.65f, 5f, 1f), Vector3(1.65f, 5f, 0.5f), Vector3(5f, 5f, 0f)
+//    )
+
+//    private val controlPoints = listOf(
+//        Vector3(-5f, -5f, 2f),  Vector3(-1.65f, -5f, -1f), Vector3(1.65f, -5f, 3f),   Vector3(5f, -5f, -2f),
+//        Vector3(-5f, -1.65f, -1f), Vector3(-1.65f, -1.65f, 4f), Vector3(1.65f, -1.65f, -3f), Vector3(5f, -1.65f, 2f),
+//        Vector3(-5f, 1.65f, 3f), Vector3(-1.65f, 1.65f, -4f), Vector3(1.65f, 1.65f, 5f), Vector3(5f, 1.65f, -1f),
+//        Vector3(-5f, 5f, -2f),  Vector3(-1.65f, 5f, 1f),  Vector3(1.65f, 5f, -2f),  Vector3(5f, 5f, 2f)
+    //    )
     private val controlPoints = listOf(
-        Vector3(-5f, -5f, 0f), Vector3(-1.65f, -5f, 1f), Vector3(1.65f, -5f, 0.5f), Vector3(5f, -5f, 0f),
-        Vector3(-5f, -1.65f, 1.5f), Vector3(-1.65f, -1.65f, 2.5f), Vector3(1.65f, -1.65f, 2f), Vector3(5f, -1.65f, 1f),
-        Vector3(-5f, 1.65f, 2f), Vector3(-1.65f, 1.65f, 3f), Vector3(1.65f, 1.65f, 2.5f), Vector3(5f, 1.65f, 1.5f),
-        Vector3(-5f, 5f, 0f), Vector3(-1.65f, 5f, 1f), Vector3(1.65f, 5f, 0.5f), Vector3(5f, 5f, 0f)
+        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
+        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
+        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
+        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
     )
+
+
 
     private val _rotationAlpha = MutableStateFlow(0f)
     val rotationAlpha: StateFlow<Float> = _rotationAlpha
@@ -139,24 +164,36 @@ class BezierViewModel : ViewModel() {
     }
 
     // Update the calculateLighting function to use currentTime
-    fun calculateLighting(triangle: Triangle): Color {
-        return calculateLightingInternal(triangle, _currentTime.value)
-    }
+//    fun calculateLighting(triangle: Triangle): Color {
+//        return calculateLightingInternal(triangle, _currentTime.value)
+//    }
 
     // Light position calculation for spiral movement
+    //    private fun calculateLightPosition(time: Float): Vector3 {
+    //        val radius = 5.0f  // Adjust radius of spiral
+    //        val speed = 1.0f   // Adjust speed of movement
+    //        val height = 2.0f  // Height of spiral plane (z=const from requirements)
+    //
+    //        return Vector3(
+    //            radius * cos(time * speed),
+    //            radius * sin(time * speed),
+    //            height
+    //        )
+    //    }
+
+    // Modified light position calculation to match requirements
     private fun calculateLightPosition(time: Float): Vector3 {
-        val radius = 5.0f  // Adjust radius of spiral
-        val speed = 1.0f   // Adjust speed of movement
-        val height = 2.0f  // Height of spiral plane (z=const from requirements)
+        val radius = 2.0f + time * 0.2f  // Spiral grows outward
+        val spiralZ = 3.0f  // Constant Z plane as per requirements
 
         return Vector3(
-            radius * cos(time * speed),
-            radius * sin(time * speed),
-            height
+            radius * cos(time * 2f),  // X coordinate
+            radius * sin(time * 2f),  // Y coordinate
+            spiralZ                   // Constant Z coordinate
         )
     }
 
-    private fun calculateLightingInternal(triangle: Triangle, time: Float): Color {
+    fun calculateLighting(triangle: Triangle, time: Float): Color {
         // Get light position for current time
         val lightPos = calculateLightPosition(time)
 
@@ -216,36 +253,36 @@ class BezierViewModel : ViewModel() {
             b.toInt().coerceIn(0, 255)
         )
     }
-//    fun calculateLighting(triangle: Triangle): Color {
-//        // Compute the normal vector N for the triangle
-//        val v0 = triangle.vertices[0].position
-//        val v1 = triangle.vertices[1].position
-//        val v2 = triangle.vertices[2].position
-//        val edge1 = v1 - v0
-//        val edge2 = v2 - v0
-//        val normal = edge1.cross(edge2).normalize()
-//
-//        // Diffuse component
-//        val cosTheta = max(normal.dot(lightDirection), 0f)
-//        val diffuse = k_d * I_L * cosTheta
-//
-//        // Specular component
-//        val reflection = (normal * (2 * cosTheta) - lightDirection).normalize()
-//        val cosPhi = max(reflection.dot(viewDirection), 0f)
-//        val specular = k_s * I_L * cosPhi.pow(n)
-//
-//        // Ambient component
-//        val ambient = k_d * L_0
-//
-//        // Total lighting (diffuse + specular + ambient)
-//        val colorVector = ambient + diffuse + specular
-//
-//        // Clamp RGB values to [0, 1] and convert to Color
-//        val r = (colorVector.x).coerceIn(0f, 1f)
-//        val g = (colorVector.y).coerceIn(0f, 1f)
-//        val b = (colorVector.z).coerceIn(0f, 1f)
-//        return Color(r, g, b)
-//    }
+    //    fun calculateLighting(triangle: Triangle): Color {
+    //        // Compute the normal vector N for the triangle
+    //        val v0 = triangle.vertices[0].position
+    //        val v1 = triangle.vertices[1].position
+    //        val v2 = triangle.vertices[2].position
+    //        val edge1 = v1 - v0
+    //        val edge2 = v2 - v0
+    //        val normal = edge1.cross(edge2).normalize()
+    //
+    //        // Diffuse component
+    //        val cosTheta = max(normal.dot(lightDirection), 0f)
+    //        val diffuse = k_d * I_L * cosTheta
+    //
+    //        // Specular component
+    //        val reflection = (normal * (2 * cosTheta) - lightDirection).normalize()
+    //        val cosPhi = max(reflection.dot(viewDirection), 0f)
+    //        val specular = k_s * I_L * cosPhi.pow(n)
+    //
+    //        // Ambient component
+    //        val ambient = k_d * L_0
+    //
+    //        // Total lighting (diffuse + specular + ambient)
+    //        val colorVector = ambient + diffuse + specular
+    //
+    //        // Clamp RGB values to [0, 1] and convert to Color
+    //        val r = (colorVector.x).coerceIn(0f, 1f)
+    //        val g = (colorVector.y).coerceIn(0f, 1f)
+    //        val b = (colorVector.z).coerceIn(0f, 1f)
+    //        return Color(r, g, b)
+    //    }
 
     // To be uncommented when the file is ready
     // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")

@@ -23,6 +23,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     val rotationAlpha by viewModel.rotationAlpha.collectAsState()
     val rotationBeta by viewModel.rotationBeta.collectAsState()
     val triangulationAccuracy by viewModel.triangulationAccuracy.collectAsState()
+    val currentTime by viewModel.currentTime.collectAsState()
 
     Row(modifier = Modifier.fillMaxSize()) {
         val mesh by viewModel.mesh.collectAsState()
@@ -48,7 +49,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 if (isMeshMode) {
                     drawTriangle(transformedTriangle, Color.Black, outlineOnly = true) // Mesh outline
                 } else {
-                    drawTriangle(transformedTriangle, viewModel.calculateLighting(transformedTriangle), outlineOnly = false) // Filled
+                    drawTriangle(transformedTriangle, viewModel.calculateLighting(transformedTriangle, currentTime), outlineOnly = false) // Filled
                 }
             }
         }
@@ -69,7 +70,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             Slider(
                 value = rotationAlpha,
                 onValueChange = { viewModel.updateRotation(it, rotationBeta) },
-                valueRange = -0.7853982f..0.7853982f,
+                valueRange = -2*0.7853982f..2*0.7853982f,
                 modifier = Modifier.padding(8.dp)
             )
 
@@ -83,7 +84,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             Slider(
                 value = rotationBeta,
                 onValueChange = { viewModel.updateRotation(rotationAlpha, it) },
-                valueRange = 0f..0.17453292f,
+                valueRange = 0f..4*0.17453292f,
                 modifier = Modifier.padding(8.dp)
             )
 
@@ -97,7 +98,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             Slider(
                 value = triangulationAccuracy.toFloat(),
                 onValueChange = { viewModel.updateTriangulation(it.toInt()) },
-                valueRange = 1f..20f,
+                valueRange = 1f..40f,
                 modifier = Modifier.padding(8.dp)
             )
 
