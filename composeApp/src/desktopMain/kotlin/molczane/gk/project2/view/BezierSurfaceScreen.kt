@@ -98,7 +98,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             Slider(
                 value = triangulationAccuracy.toFloat(),
                 onValueChange = { viewModel.updateTriangulation(it.toInt()) },
-                valueRange = 1f..40f,
+                valueRange = 1f..80f,
                 modifier = Modifier.padding(8.dp)
             )
 

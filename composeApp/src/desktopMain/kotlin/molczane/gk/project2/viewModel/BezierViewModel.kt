@@ -36,18 +36,6 @@ class BezierViewModel : ViewModel() {
         startLightAnimation()
     }
 
-//        private fun startLightAnimation() {
-//            animationJob = viewModelScope.launch {
-//                var startTime = System.nanoTime()
-//                while (true) {
-//                    val currentNanoTime = System.nanoTime()
-//                    val elapsedSeconds = (currentNanoTime - startTime) / 1_000_000_000f
-//                    _currentTime.value = elapsedSeconds * 0.2f  // Adjust multiplier to change speed
-//                    delay(50) // Approximately 60 FPS
-//                }
-//            }
-//        }
-
     private fun startLightAnimation() {
         lastFrameTime = System.nanoTime()
         animationJob = viewModelScope.launch {
@@ -75,12 +63,12 @@ class BezierViewModel : ViewModel() {
     private val viewDirection = Vector3(0.0f, 0.0f, 1.0f).normalize()
 
     // Define control points for the Bezier surface with values in the range -5 to 5
-//    private val controlPoints = listOf(
-//        Vector3(-5f, -5f, 0f), Vector3(-1.65f, -5f, 1f), Vector3(1.65f, -5f, 0.5f), Vector3(5f, -5f, 0f),
-//        Vector3(-5f, -1.65f, 1.5f), Vector3(-1.65f, -1.65f, 2.5f), Vector3(1.65f, -1.65f, 2f), Vector3(5f, -1.65f, 1f),
-//        Vector3(-5f, 1.65f, 2f), Vector3(-1.65f, 1.65f, 3f), Vector3(1.65f, 1.65f, 2.5f), Vector3(5f, 1.65f, 1.5f),
-//        Vector3(-5f, 5f, 0f), Vector3(-1.65f, 5f, 1f), Vector3(1.65f, 5f, 0.5f), Vector3(5f, 5f, 0f)
-//    )
+    private val controlPoints = listOf(
+        Vector3(-5f, -5f, 0f), Vector3(-1.65f, -5f, 1f), Vector3(1.65f, -5f, 0.5f), Vector3(5f, -5f, 0f),
+        Vector3(-5f, -1.65f, 1.5f), Vector3(-1.65f, -1.65f, 2.5f), Vector3(1.65f, -1.65f, 2f), Vector3(5f, -1.65f, 1f),
+        Vector3(-5f, 1.65f, 2f), Vector3(-1.65f, 1.65f, 3f), Vector3(1.65f, 1.65f, 2.5f), Vector3(5f, 1.65f, 1.5f),
+        Vector3(-5f, 5f, 0f), Vector3(-1.65f, 5f, 1f), Vector3(1.65f, 5f, 0.5f), Vector3(5f, 5f, 0f)
+    )
 
 //    private val controlPoints = listOf(
 //        Vector3(-5f, -5f, 2f),  Vector3(-1.65f, -5f, -1f), Vector3(1.65f, -5f, 3f),   Vector3(5f, -5f, -2f),
@@ -88,12 +76,12 @@ class BezierViewModel : ViewModel() {
 //        Vector3(-5f, 1.65f, 3f), Vector3(-1.65f, 1.65f, -4f), Vector3(1.65f, 1.65f, 5f), Vector3(5f, 1.65f, -1f),
 //        Vector3(-5f, 5f, -2f),  Vector3(-1.65f, 5f, 1f),  Vector3(1.65f, 5f, -2f),  Vector3(5f, 5f, 2f)
     //    )
-    private val controlPoints = listOf(
-        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
-        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
-        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
-        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
-    )
+//    private val controlPoints = listOf(
+//        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
+//        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
+//        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
+//        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
+//    )
 
 
 
@@ -162,24 +150,6 @@ class BezierViewModel : ViewModel() {
         _triangulationAccuracy.value = accuracy
         _mesh.value = generateBezierMesh() // Regenerate mesh with new accuracy
     }
-
-    // Update the calculateLighting function to use currentTime
-//    fun calculateLighting(triangle: Triangle): Color {
-//        return calculateLightingInternal(triangle, _currentTime.value)
-//    }
-
-    // Light position calculation for spiral movement
-    //    private fun calculateLightPosition(time: Float): Vector3 {
-    //        val radius = 5.0f  // Adjust radius of spiral
-    //        val speed = 1.0f   // Adjust speed of movement
-    //        val height = 2.0f  // Height of spiral plane (z=const from requirements)
-    //
-    //        return Vector3(
-    //            radius * cos(time * speed),
-    //            radius * sin(time * speed),
-    //            height
-    //        )
-    //    }
 
     // Modified light position calculation to match requirements
     private fun calculateLightPosition(time: Float): Vector3 {
@@ -253,36 +223,6 @@ class BezierViewModel : ViewModel() {
             b.toInt().coerceIn(0, 255)
         )
     }
-    //    fun calculateLighting(triangle: Triangle): Color {
-    //        // Compute the normal vector N for the triangle
-    //        val v0 = triangle.vertices[0].position
-    //        val v1 = triangle.vertices[1].position
-    //        val v2 = triangle.vertices[2].position
-    //        val edge1 = v1 - v0
-    //        val edge2 = v2 - v0
-    //        val normal = edge1.cross(edge2).normalize()
-    //
-    //        // Diffuse component
-    //        val cosTheta = max(normal.dot(lightDirection), 0f)
-    //        val diffuse = k_d * I_L * cosTheta
-    //
-    //        // Specular component
-    //        val reflection = (normal * (2 * cosTheta) - lightDirection).normalize()
-    //        val cosPhi = max(reflection.dot(viewDirection), 0f)
-    //        val specular = k_s * I_L * cosPhi.pow(n)
-    //
-    //        // Ambient component
-    //        val ambient = k_d * L_0
-    //
-    //        // Total lighting (diffuse + specular + ambient)
-    //        val colorVector = ambient + diffuse + specular
-    //
-    //        // Clamp RGB values to [0, 1] and convert to Color
-    //        val r = (colorVector.x).coerceIn(0f, 1f)
-    //        val g = (colorVector.y).coerceIn(0f, 1f)
-    //        val b = (colorVector.z).coerceIn(0f, 1f)
-    //        return Color(r, g, b)
-    //    }
 
     // To be uncommented when the file is ready
     // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")
