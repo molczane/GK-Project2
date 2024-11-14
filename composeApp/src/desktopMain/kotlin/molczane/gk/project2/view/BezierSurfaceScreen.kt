@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.utils.functions.drawTriangle
+import molczane.gk.project2.utils.functions.drawTrianglePixelByPixel
+import molczane.gk.project2.utils.functions.fillPolygonWithScanLine
 import molczane.gk.project2.utils.functions.rotatePoint
 import molczane.gk.project2.viewModel.BezierViewModel
 
@@ -45,12 +47,23 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 // Create a new Triangle with transformed vertices
                 val transformedTriangle = Triangle(transformedVertices)
 
-                // Draw the triangle in either mesh or filled mode
-                if (isMeshMode) {
-                    drawTriangle(transformedTriangle, Color.Black, outlineOnly = true) // Mesh outline
-                } else {
-                    drawTriangle(transformedTriangle, viewModel.calculateLighting(transformedTriangle, currentTime), outlineOnly = false) // Filled
-                }
+//                // Call the pixel-by-pixel draw function, passing the drawContext
+//                drawTrianglePixelByPixel(
+//                    triangle = transformedTriangle,
+//                    color = if (isMeshMode) Color.Black else viewModel.calculateLighting(transformedTriangle, currentTime),
+//                )
+
+                fillPolygonWithScanLine(
+                    triangle = transformedTriangle,
+                    color = if (isMeshMode) Color.Black else viewModel.calculateLighting(transformedTriangle, currentTime),
+                )
+
+//                // Draw the triangle in either mesh or filled mode
+//                if (isMeshMode) {
+//                    drawTriangle(transformedTriangle, Color.Black, outlineOnly = true) // Mesh outline
+//                } else {
+//                    drawTriangle(transformedTriangle, viewModel.calculateLighting(transformedTriangle, currentTime), outlineOnly = false) // Filled
+//                }
             }
         }
 
