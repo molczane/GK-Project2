@@ -44,7 +44,7 @@ class BezierViewModel : ViewModel() {
                 val deltaTime = (currentNanoTime - lastFrameTime) / 1_000_000_000f
                 _currentTime.value += deltaTime
                 lastFrameTime = currentNanoTime
-                delay(16)
+                delay(32)
             }
         }
     }
