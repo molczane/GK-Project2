@@ -1,5 +1,6 @@
 package molczane.gk.project2.viewModel
 
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +13,7 @@ import molczane.gk.project2.model.Mesh
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.model.Vector3
 import molczane.gk.project2.model.Vertex
+import molczane.gk.project2.utils.functions.calculateBarycentricCoordinates
 import kotlin.math.pow
 import molczane.gk.project2.utils.functions.cross
 import kotlin.math.cos
@@ -24,7 +26,7 @@ class BezierViewModel : ViewModel() {
     private val k_s = Vector3(0.5f, 0.5f, 0.5f) // Specular coefficient (example RGB)
     private val I_L = Vector3(1.0f, 1.0f, 1.0f) // Light intensity (example RGB)
     private val L_0 = Vector3(0.3f, 0.3f, 0.3f) // Ambient light intensity (example RGB)
-    private val n = 32 // Shininess coefficient
+    private val n = 1000 // Shininess coefficient
 
     private val _currentTime = MutableStateFlow(0f)
     val currentTime: StateFlow<Float> = _currentTime
@@ -154,7 +156,7 @@ class BezierViewModel : ViewModel() {
     // Modified light position calculation to match requirements
     private fun calculateLightPosition(time: Float): Vector3 {
         val radius = 2.0f + time * 0.2f  // Spiral grows outward
-        val spiralZ = 3.0f  // Constant Z plane as per requirements
+        val spiralZ = 1.0f  // Constant Z plane as per requirements
 
         return Vector3(
             radius * cos(time * 2f),  // X coordinate
@@ -162,6 +164,57 @@ class BezierViewModel : ViewModel() {
             spiralZ                   // Constant Z coordinate
         )
     }
+
+   fun calculateLightingForPoint(
+    point: Vector3,
+    triangle: Triangle,
+    k_d: Vector3 = Vector3(0.8f, 0.8f, 0.8f),
+    k_s: Vector3 = Vector3(0.5f, 0.5f, 0.5f),
+    I_L: Vector3 = Vector3(1.0f, 1.0f, 1.0f),
+    n: Float = 0.2f
+): Color {
+       val lightPos = calculateLightPosition(_currentTime.value)
+
+       // Calculate the triangle normal
+       val v0 = triangle.vertices[0].position
+       val v1 = triangle.vertices[1].position
+       val v2 = triangle.vertices[2].position
+       val edge1 = v1 - v0
+       val edge2 = v2 - v0
+       val normal = edge1.cross(edge2).normalize()
+
+       // Calculate light direction
+       val L = (lightPos - point).normalize()
+       val cosNL = maxOf(normal.dot(L), 0f)
+
+       // View vector (assuming view is along the z-axis)
+       val V = Vector3(0f, 0f, 1f).normalize()
+       val R = (normal * (2f * cosNL) - L).normalize()
+       val cosVR = maxOf(V.dot(R), 0f)
+
+       // Calculate diffuse and specular terms
+       val diffuseTerm = Vector3(
+           k_d.x * I_L.x * cosNL,
+           k_d.y * I_L.y * cosNL,
+           k_d.z * I_L.z * cosNL
+       )
+
+       val specularTerm = Vector3(
+           k_s.x * I_L.x * cosVR.pow(n),
+           k_s.y * I_L.y * cosVR.pow(n),
+           k_s.z * I_L.z * cosVR.pow(n)
+       )
+
+       // Final color
+       val resultColor = Vector3(
+           (diffuseTerm.x + specularTerm.x).coerceIn(0f, 1f) * 255,
+           (diffuseTerm.y + specularTerm.y).coerceIn(0f, 1f) * 255,
+           (diffuseTerm.z + specularTerm.z).coerceIn(0f, 1f) * 255
+       )
+
+       return Color(resultColor.x.toInt(), resultColor.y.toInt(), resultColor.z.toInt())
+   }
+
 
     fun calculateLighting(triangle: Triangle, time: Float): Color {
         // Get light position for current time

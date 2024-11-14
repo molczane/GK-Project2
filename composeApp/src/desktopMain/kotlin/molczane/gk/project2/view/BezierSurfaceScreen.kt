@@ -92,25 +92,12 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 // Create a new Triangle with transformed vertices
                 val transformedTriangle = Triangle(transformedVertices)
 
-//                // Call the pixel-by-pixel draw function, passing the drawContext
-//                drawTrianglePixelByPixel(
-//                    triangle = transformedTriangle,
-//                    color = if (isMeshMode) Color.Black else viewModel.calculateLighting(transformedTriangle, currentTime),
-//                )
-
                 fillPolygonWithScanLine(
                     triangle = transformedTriangle,
                     color = if (isMeshMode) Color.Transparent else viewModel.calculateLighting(transformedTriangle, currentTime),
                 )
 
                 drawTriangleOutline(transformedTriangle, viewModel.calculateLighting(transformedTriangle, currentTime))
-
-//                // Draw the triangle in either mesh or filled mode
-//                if (isMeshMode) {
-//                    drawTriangle(transformedTriangle, Color.Black, outlineOnly = true) // Mesh outline
-//                } else {
-//                    drawTriangle(transformedTriangle, viewModel.calculateLighting(transformedTriangle, currentTime), outlineOnly = false) // Filled
-//                }
             }
         }
 
