@@ -1,6 +1,5 @@
 package molczane.gk.project2.viewModel
 
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,7 +12,6 @@ import molczane.gk.project2.model.Mesh
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.model.Vector3
 import molczane.gk.project2.model.Vertex
-import molczane.gk.project2.utils.functions.calculateBarycentricCoordinates
 import kotlin.math.pow
 import molczane.gk.project2.utils.functions.cross
 import kotlin.math.cos
@@ -172,7 +170,7 @@ class BezierViewModel : ViewModel() {
     k_s: Vector3 = Vector3(0.5f, 0.5f, 0.5f),
     I_L: Vector3 = Vector3(1.0f, 1.0f, 1.0f),
     n: Float = 0.2f
-): Color {
+   ): Color {
        val lightPos = calculateLightPosition(_currentTime.value)
 
        // Calculate the triangle normal
@@ -277,25 +275,36 @@ class BezierViewModel : ViewModel() {
         )
     }
 
+    private fun calculateTangentU(u: Float, v: Float): Vector3 {
+        val pointsU = (0..3).map { i ->
+            val pointsV = (0..3).map { j -> controlPoints[i * 4 + j] }
+            interpolateBezier1D(pointsV, v)
+        }
+
+        // Oblicz różnice w kierunku U
+        var tangent = Vector3(0f, 0f, 0f)
+        for (i in 0 until pointsU.size - 1) {
+            tangent += (pointsU[i + 1] - pointsU[i]) * 3f * (1 - u).pow(2 - i) * u.pow(i)
+        }
+
+        return tangent
+    }
+
+    private fun calculateTangentV(u: Float, v: Float): Vector3 {
+        val pointsV = (0..3).map { j ->
+            val pointsU = (0..3).map { i -> controlPoints[i * 4 + j] }
+            interpolateBezier1D(pointsU, u)
+        }
+
+        // Oblicz różnice w kierunku V
+        var tangent = Vector3(0f, 0f, 0f)
+        for (j in 0 until pointsV.size - 1) {
+            tangent += (pointsV[j + 1] - pointsV[j]) * 3f * (1 - v).pow(2 - j) * v.pow(j)
+        }
+
+        return tangent
+    }
+
     // To be uncommented when the file is ready
     // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")
-
-    // Sample function to create a basic mesh for testing purposes
-    // Generate a sample mesh with realistic Vector3 vertices for testing
-    private fun generateSampleMesh(): Mesh {
-        // Define sample vertices using Vector3 coordinates
-        val vertices = listOf(
-            Vertex(Vector3(-0.5f, -0.5f, 0f)),
-            Vertex(Vector3(0.5f, -0.5f, 1f)),
-            Vertex(Vector3(0f, 0.5f, 2f))
-        )
-        // Create a list of triangles using these vertices
-        val triangles = listOf(Triangle(vertices))
-        return Mesh(triangles)
-    }
-
-    // Update mesh based on the triangulation accuracy
-    fun updateMesh() {
-        _mesh.value = generateBezierMesh()
-    }
 }
