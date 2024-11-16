@@ -3,11 +3,16 @@ package molczane.gk.project2.viewModel
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import molczane.gk.project2.model.Mesh
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.model.Vector3
@@ -32,12 +37,17 @@ class BezierViewModel : ViewModel() {
     private var animationJob: Job? = null
     private var lastFrameTime: Long = 0
 
+    private val _isLightAnimationRunning = MutableStateFlow(true)
+    val isLightAnimationRunning: StateFlow<Boolean> = _isLightAnimationRunning
+
+
     init {
         startLightAnimation()
     }
 
     private fun startLightAnimation() {
         lastFrameTime = System.nanoTime()
+        animationJob?.cancel() // Anuluj poprzednią animację, jeśli istnieje
         animationJob = viewModelScope.launch {
             while (true) {
                 val currentNanoTime = System.nanoTime()
@@ -49,6 +59,14 @@ class BezierViewModel : ViewModel() {
         }
     }
 
+    fun toggleLightAnimation() {
+        _isLightAnimationRunning.value = !_isLightAnimationRunning.value
+        if (_isLightAnimationRunning.value) {
+            startLightAnimation()
+        } else {
+            animationJob?.cancel()
+        }
+    }
 
     // Make sure to cancel the animation when the ViewModel is cleared
     override fun onCleared() {
@@ -118,52 +136,113 @@ class BezierViewModel : ViewModel() {
         return tempPoints[0]
     }
 
+
+    // async version of genereateBezierMesh()
     private fun generateBezierMesh(): Mesh {
-        val triangles = mutableListOf<Triangle>()
         val step = 1f / _triangulationAccuracy.value
+        val tasks = mutableListOf<Deferred<List<Triangle>>>()
 
-        for (i in 0 until _triangulationAccuracy.value) {
-            for (j in 0 until _triangulationAccuracy.value) {
-                val u = i * step
-                val v = j * step
+        runBlocking(Dispatchers.Default) {
+            for (i in 0 until _triangulationAccuracy.value) {
+                tasks.add(async {
+                    val localTriangles = mutableListOf<Triangle>()
+                    for (j in 0 until _triangulationAccuracy.value) {
+                        val u = i * step
+                        val v = j * step
 
-                // Oblicz pozycje wierzchołków
-                val p1 = interpolateBezierSurface(u, v)
-                val p2 = interpolateBezierSurface(u + step, v)
-                val p3 = interpolateBezierSurface(u, v + step)
-                val p4 = interpolateBezierSurface(u + step, v + step)
+                        // Oblicz pozycje wierzchołków
+                        val p1 = interpolateBezierSurface(u, v)
+                        val p2 = interpolateBezierSurface(u + step, v)
+                        val p3 = interpolateBezierSurface(u, v + step)
+                        val p4 = interpolateBezierSurface(u + step, v + step)
 
-                // Oblicz wektory styczne dla normalnych
-                val tangentU1 = calculateTangentU(u, v)
-                val tangentV1 = calculateTangentV(u, v)
-                val normal1 = tangentU1.cross(tangentV1).normalize()
+                        // Oblicz wektory styczne dla normalnych
+                        val tangentU1 = calculateTangentU(u, v)
+                        val tangentV1 = calculateTangentV(u, v)
+                        val normal1 = tangentU1.cross(tangentV1).normalize()
 
-                val tangentU2 = calculateTangentU(u + step, v)
-                val tangentV2 = calculateTangentV(u + step, v)
-                val normal2 = tangentU2.cross(tangentV2).normalize()
+                        val tangentU2 = calculateTangentU(u + step, v)
+                        val tangentV2 = calculateTangentV(u + step, v)
+                        val normal2 = tangentU2.cross(tangentV2).normalize()
 
-                val tangentU3 = calculateTangentU(u, v + step)
-                val tangentV3 = calculateTangentV(u, v + step)
-                val normal3 = tangentU3.cross(tangentV3).normalize()
+                        val tangentU3 = calculateTangentU(u, v + step)
+                        val tangentV3 = calculateTangentV(u, v + step)
+                        val normal3 = tangentU3.cross(tangentV3).normalize()
 
-                val tangentU4 = calculateTangentU(u + step, v + step)
-                val tangentV4 = calculateTangentV(u + step, v + step)
-                val normal4 = tangentU4.cross(tangentV4).normalize()
+                        val tangentU4 = calculateTangentU(u + step, v + step)
+                        val tangentV4 = calculateTangentV(u + step, v + step)
+                        val normal4 = tangentU4.cross(tangentV4).normalize()
 
-                // Twórz wierzchołki z normalnymi i UV
-                val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
-                val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
-                val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
-                val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
+                        // Twórz wierzchołki z normalnymi i UV
+                        val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
+                        val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
+                        val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
+                        val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
 
-                // Twórz dwa trójkąty dla każdego czworokąta
-                triangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
-                triangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
+                        // Twórz dwa trójkąty dla każdego czworokąta
+                        localTriangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
+                        localTriangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
+                    }
+                    localTriangles
+                })
             }
+        }
+
+        // Czekaj na wyniki wszystkich zadań
+        val triangles = runBlocking {
+            tasks.awaitAll().flatten()
         }
 
         return Mesh(triangles)
     }
+
+
+//    private fun generateBezierMesh(): Mesh {
+//        val triangles = mutableListOf<Triangle>()
+//        val step = 1f / _triangulationAccuracy.value
+//
+//        for (i in 0 until _triangulationAccuracy.value) {
+//            for (j in 0 until _triangulationAccuracy.value) {
+//                val u = i * step
+//                val v = j * step
+//
+//                // Oblicz pozycje wierzchołków
+//                val p1 = interpolateBezierSurface(u, v)
+//                val p2 = interpolateBezierSurface(u + step, v)
+//                val p3 = interpolateBezierSurface(u, v + step)
+//                val p4 = interpolateBezierSurface(u + step, v + step)
+//
+//                // Oblicz wektory styczne dla normalnych
+//                val tangentU1 = calculateTangentU(u, v)
+//                val tangentV1 = calculateTangentV(u, v)
+//                val normal1 = tangentU1.cross(tangentV1).normalize()
+//
+//                val tangentU2 = calculateTangentU(u + step, v)
+//                val tangentV2 = calculateTangentV(u + step, v)
+//                val normal2 = tangentU2.cross(tangentV2).normalize()
+//
+//                val tangentU3 = calculateTangentU(u, v + step)
+//                val tangentV3 = calculateTangentV(u, v + step)
+//                val normal3 = tangentU3.cross(tangentV3).normalize()
+//
+//                val tangentU4 = calculateTangentU(u + step, v + step)
+//                val tangentV4 = calculateTangentV(u + step, v + step)
+//                val normal4 = tangentU4.cross(tangentV4).normalize()
+//
+//                // Twórz wierzchołki z normalnymi i UV
+//                val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
+//                val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
+//                val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
+//                val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
+//
+//                // Twórz dwa trójkąty dla każdego czworokąta
+//                triangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
+//                triangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
+//            }
+//        }
+//
+//        return Mesh(triangles)
+//    }
 
 
     // Update rotation without regenerating mesh
@@ -180,8 +259,8 @@ class BezierViewModel : ViewModel() {
 
     // Modified light position calculation to match requirements
     private fun calculateLightPosition(time: Float): Vector3 {
-        val radius = 2.0f + time * 0.2f  // Spiral grows outward
-        val spiralZ = 1.0f  // Constant Z plane as per requirements
+        val radius = 1.0f + time * 0.1f  // Spiral grows outward
+        val spiralZ = 1.2f  // Constant Z plane as per requirements
 
         return Vector3(
             radius * cos(time * 2f),  // X coordinate

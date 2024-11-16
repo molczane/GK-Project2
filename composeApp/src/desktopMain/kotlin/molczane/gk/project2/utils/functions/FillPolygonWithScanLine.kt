@@ -12,7 +12,92 @@ import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 
-// Try to optimize
+import kotlinx.coroutines.*
+
+// coroutines used in this function
+//fun DrawScope.fillPolygonWithScanLine(
+//    triangle: Triangle,
+//    scale: Float = 100f,
+//    calculateColorForPoint: (point: Vector3) -> Color,
+//    time: Float
+//) {
+//    val canvasCenterX = size.width / 2
+//    val canvasCenterY = size.height / 2
+//
+//    val vertices = listOf(
+//        triangle.vertices[0].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
+//        triangle.vertices[1].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
+//        triangle.vertices[2].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f)
+//    )
+//
+//    val sortedVertices = vertices.sortedBy { it.y }
+//    val yMin = sortedVertices.first().y.toInt()
+//    val yMax = sortedVertices.last().y.toInt()
+//
+//    val edgeTable = mutableListOf<Edge>()
+//    for (i in sortedVertices.indices) {
+//        val v1 = sortedVertices[i]
+//        val v2 = sortedVertices[(i + 1) % sortedVertices.size]
+//        if (v1.y != v2.y) {
+//            val ymin = floor(min(v1.y, v2.y)).toInt()
+//            val ymax = ceil(max(v1.y, v2.y)).toInt()
+//            val xMin = if (v1.y < v2.y) v1.x else v2.x
+//            val inverseSlope = (v2.x - v1.x) / (v2.y - v1.y)
+//            edgeTable.add(Edge(ymin, ymax, xMin, inverseSlope))
+//        }
+//    }
+//
+//    val activeEdgeTable = mutableListOf<Edge>()
+//
+//    runBlocking {
+//        // Lista korutyn dla równoległych zadań
+//        val tasks = mutableListOf<Deferred<List<Pair<Offset, Color>>>>()
+//
+//        for (y in yMin until yMax) {
+//            activeEdgeTable.addAll(edgeTable.filter { it.yMin == y })
+//            activeEdgeTable.removeAll { it.yMax <= y }
+//            activeEdgeTable.sortBy { it.xMin }
+//
+//            if (activeEdgeTable.size < 2) continue
+//
+//            val xStart = ceil(activeEdgeTable[0].xMin).toInt()
+//            val xEnd = floor(activeEdgeTable[1].xMin).toInt()
+//
+//            // Przetwarzaj obliczenia wierszy równolegle
+//            tasks.add(async(Dispatchers.Default) {
+//                val pixels = mutableListOf<Pair<Offset, Color>>()
+//
+//                for (x in xStart..xEnd) {
+//                    val interpolatedPoint = interpolateBarycentric(
+//                        x.toFloat(),
+//                        y.toFloat(),
+//                        vertices,
+//                        triangle.vertices
+//                    )
+//                    val pointColor = calculateColorForPoint(interpolatedPoint)
+//                    pixels.add(Offset(x.toFloat(), y.toFloat()) to pointColor)
+//                }
+//
+//                pixels
+//            })
+//
+//            for (edge in activeEdgeTable) {
+//                edge.xMin += edge.inverseSlope
+//            }
+//        }
+//
+//        // Czekaj na zakończenie wszystkich korutyn
+//        val pixelBuffer = tasks.awaitAll().flatten()
+//
+//        // Rysuj wszystkie przetworzone piksele
+//        pixelBuffer.forEach { (offset, color) ->
+//            drawRect(color = color, topLeft = offset, size = Size(1f, 1f))
+//        }
+//    }
+//}
+
+
+// a bit optimized version
 fun DrawScope.fillPolygonWithScanLine(
     triangle: Triangle,
     scale: Float = 100f,
@@ -81,7 +166,7 @@ fun DrawScope.fillPolygonWithScanLine(
     }
 }
 
-
+// basic version
 //fun DrawScope.fillPolygonWithScanLine(
 //    triangle: Triangle,
 //    scale: Float = 100f,
@@ -193,6 +278,7 @@ private fun edgeFunction(v0: Vector3, v1: Vector3, p: Vector3): Float {
 // Edge data structure
 data class Edge(val yMin: Int, val yMax: Int, var xMin: Float, val inverseSlope: Float)
 
+// version with the same color for whole triangles
 //fun DrawScope.fillPolygonWithScanLine(triangle: Triangle,
 //                                      color: Color,
 //                                      scale: Float = 100f,

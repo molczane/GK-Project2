@@ -22,6 +22,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
 
     // Collect all StateFlow values
     val rotationAlpha by viewModel.rotationAlpha.collectAsState()
+    val isLightAnimationRunning by viewModel.isLightAnimationRunning.collectAsState()
     val rotationBeta by viewModel.rotationBeta.collectAsState()
     val triangulationAccuracy by viewModel.triangulationAccuracy.collectAsState()
     val currentTime by viewModel.currentTime.collectAsState()
@@ -151,6 +152,24 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             )
 
             // ... rest of the UI remains the same ...
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Toggle light animation
+            Text(
+                text = "Light Animation", fontSize = 14.sp,
+                modifier = Modifier.padding(8.dp)
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(8.dp),
+            ) {
+                Text(text = if (isLightAnimationRunning) "On" else "Off")
+                Switch(
+                    checked = isLightAnimationRunning,
+                    onCheckedChange = { viewModel.toggleLightAnimation() }
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
