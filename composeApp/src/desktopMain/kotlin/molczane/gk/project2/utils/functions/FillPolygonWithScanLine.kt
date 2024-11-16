@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.unit.dp
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.model.Vector3
 import molczane.gk.project2.model.Vertex
@@ -173,12 +174,12 @@ import kotlinx.coroutines.*
 //}
 
 
-//// a bit optimized version
+// basic version
 fun DrawScope.fillPolygonWithScanLine(
     triangle: Triangle,
     scale: Float = 100f,
     calculateColorForPoint: (point: Vector3) -> Color,
-    time: Float,
+    currentLightPos: Vector3
     ) {
     val canvasCenterX = size.width / 2
     val canvasCenterY = size.height / 2
@@ -214,7 +215,7 @@ fun DrawScope.fillPolygonWithScanLine(
         activeEdgeTable.removeAll { it.yMax <= y }
         activeEdgeTable.sortBy { it.xMin }
 
-        for (i in activeEdgeTable.indices step 2) {
+        for (i in activeEdgeTable.indices step 1) {
             if (i + 1 < activeEdgeTable.size) {
                 val xStart = ceil(activeEdgeTable[i].xMin).toInt()
                 val xEnd = floor(activeEdgeTable[i + 1].xMin).toInt()
@@ -227,7 +228,7 @@ fun DrawScope.fillPolygonWithScanLine(
                         triangle.vertices
                     )
                     val pointColor = calculateColorForPoint(interpolatedPoint)
-                    drawRect(color = pointColor, topLeft = Offset(x.toFloat(), y.toFloat()), size = Size(1f, 1f))
+                    drawRect(color = pointColor, topLeft = Offset(x.toFloat(), y.toFloat()), size = Size(1.dp.toPx(), 1.dp.toPx()))
                     //pixelBuffer.add(Offset(x.toFloat(), y.toFloat()) to pointColor)
                 }
             }
@@ -243,84 +244,6 @@ fun DrawScope.fillPolygonWithScanLine(
 //    }
 
 }
-
-//// basic version
-//fun DrawScope.fillPolygonWithScanLine(
-//    triangle: Triangle,
-//    scale: Float = 100f,
-//    calculateColorForPoint: (point: Vector3) -> Color,
-//    time: Float
-//) {
-//    // Transform triangle vertices to canvas coordinates
-//    val canvasCenterX = size.width / 2
-//    val canvasCenterY = size.height / 2
-//
-//    val vertices = listOf(
-//        triangle.vertices[0].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
-//        triangle.vertices[1].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
-//        triangle.vertices[2].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f)
-//    )
-//
-//    // Sort vertices by y-coordinate for scan-line filling
-//    val sortedVertices = vertices.sortedBy { it.y }
-//    val yMin = sortedVertices.first().y.toInt()
-//    val yMax = sortedVertices.last().y.toInt()
-//
-//    // Build Edge Table
-//    val edgeTable = mutableListOf<Edge>()
-//    for (i in sortedVertices.indices) {
-//        val v1 = sortedVertices[i]
-//        val v2 = sortedVertices[(i + 1) % sortedVertices.size]
-//        if (v1.y != v2.y) {
-//            val ymin = floor(min(v1.y, v2.y)).toInt()
-//            val ymax = ceil(max(v1.y, v2.y)).toInt()
-//            val xMin = if (v1.y < v2.y) v1.x else v2.x
-//            val inverseSlope = (v2.x - v1.x) / (v2.y - v1.y)
-//            edgeTable.add(Edge(ymin, ymax, xMin, inverseSlope))
-//        }
-//    }
-//
-//    // Active Edge Table (AET)
-//    val activeEdgeTable = mutableListOf<Edge>()
-//
-//    for (y in yMin until yMax) {
-//        // Add edges to AET for the current scan-line
-//        activeEdgeTable.addAll(edgeTable.filter { it.yMin == y })
-//        activeEdgeTable.removeAll { it.yMax <= y }
-//        activeEdgeTable.sortBy { it.xMin }
-//
-//        for (i in activeEdgeTable.indices step 2) {
-//            if (i + 1 < activeEdgeTable.size) {
-//                val xStart = ceil(activeEdgeTable[i].xMin).toInt()
-//                val xEnd = floor(activeEdgeTable[i + 1].xMin).toInt()
-//
-//                for (x in xStart..xEnd) {
-//                    // Calculate barycentric coordinates
-//                    val interpolatedPoint = interpolateBarycentric(
-//                        x = x.toFloat(),
-//                        y = y.toFloat(),
-//                        vertices = sortedVertices,
-//                        triangleVertices = triangle.vertices
-//                    )
-//
-//                    // Calculate color for the interpolated point
-//                    val pointColor = calculateColorForPoint(interpolatedPoint)
-//
-//                    drawRect(
-//                        color = pointColor,
-//                        topLeft = Offset(x.toFloat(), y.toFloat()),
-//                        size = androidx.compose.ui.geometry.Size(1f, 1f)
-//                    )
-//                }
-//            }
-//        }
-//
-//        // Update x-coordinates in AET for the next scan-line
-//        for (edge in activeEdgeTable) {
-//            edge.xMin += edge.inverseSlope
-//        }
-//    }
-//}
 
 // Interpolate a point using barycentric coordinates
 private fun interpolateBarycentric(

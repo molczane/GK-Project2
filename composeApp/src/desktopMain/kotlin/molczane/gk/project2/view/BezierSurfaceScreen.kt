@@ -28,6 +28,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     val triangulationAccuracy by viewModel.triangulationAccuracy.collectAsState()
     val currentTime by viewModel.currentTime.collectAsState()
     val texture = loadImage("src/images/texture-1.png")
+    val currentLightPos = viewModel.lightPos.collectAsState()
 
     Row(modifier = Modifier.fillMaxSize()) {
         val mesh by viewModel.mesh.collectAsState()
@@ -96,7 +97,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                                 triangle = transformedTriangle
                             )
                         },
-                        time = currentTime,
+                        currentLightPos = currentLightPos.value
 //                        texture = texture,
 //                        calculateUVForPoint = { x, y, vertices, triangleVertices ->
 //                            viewModel.interpolateUV(x, y, vertices, triangleVertices)
