@@ -10,19 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Dispatchers
 import molczane.gk.project2.model.Triangle
-import molczane.gk.project2.utils.functions.drawTriangle
 import molczane.gk.project2.utils.functions.drawTriangleOutline
-import molczane.gk.project2.utils.functions.drawTrianglePixelByPixel
 import molczane.gk.project2.utils.functions.fillPolygonWithScanLine
 import molczane.gk.project2.utils.functions.rotatePoint
 import molczane.gk.project2.viewModel.BezierViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @Composable
 fun BezierSurfaceScreen(viewModel: BezierViewModel) {
@@ -92,12 +84,21 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 // Create a new Triangle with transformed vertices
                 val transformedTriangle = Triangle(transformedVertices)
 
-                fillPolygonWithScanLine(
-                    triangle = transformedTriangle,
-                    color = if (isMeshMode) Color.Transparent else viewModel.calculateLighting(transformedTriangle, currentTime),
-                )
-
-                drawTriangleOutline(transformedTriangle, viewModel.calculateLighting(transformedTriangle, currentTime))
+                if(isMeshMode) {
+                    fillPolygonWithScanLine(
+                        triangle = transformedTriangle,
+                        calculateColorForPoint = { point ->
+                            viewModel.calculateLightingForPoint(
+                                point = point,
+                                triangle = transformedTriangle
+                            )
+                        },
+                        time = currentTime
+                    )
+                }
+                else {
+                    drawTriangleOutline(transformedTriangle, Color.Black)
+                }
             }
         }
 

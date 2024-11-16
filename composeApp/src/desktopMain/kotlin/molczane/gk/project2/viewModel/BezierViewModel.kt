@@ -190,6 +190,50 @@ class BezierViewModel : ViewModel() {
         )
     }
 
+//    fun calculateLightingForPoint(
+//        point: Vector3,
+//        normal: Vector3,
+//        triangle: Triangle,
+//        k_d: Vector3 = Vector3(0.8f, 0.8f, 0.8f),
+//        k_s: Vector3 = Vector3(0.5f, 0.5f, 0.5f),
+//        I_L: Vector3 = Vector3(1.0f, 1.0f, 1.0f),
+//        n: Float = 0.2f
+//    ): Color {
+//        val lightPos = calculateLightPosition(_currentTime.value)
+//
+//        // Calculate light direction
+//        val L = (lightPos - point).normalize()
+//        val cosNL = maxOf(normal.dot(L), 0f)
+//
+//        // View vector (assuming view is along the z-axis)
+//        val V = Vector3(0f, 0f, 1f).normalize()
+//        val R = (normal * (2f * cosNL) - L).normalize()
+//        val cosVR = maxOf(V.dot(R), 0f)
+//
+//        // Calculate diffuse and specular terms
+//        val diffuseTerm = Vector3(
+//            k_d.x * I_L.x * cosNL,
+//            k_d.y * I_L.y * cosNL,
+//            k_d.z * I_L.z * cosNL
+//        )
+//
+//        val specularTerm = Vector3(
+//            k_s.x * I_L.x * cosVR.pow(n),
+//            k_s.y * I_L.y * cosVR.pow(n),
+//            k_s.z * I_L.z * cosVR.pow(n)
+//        )
+//
+//        // Final color
+//        val resultColor = Vector3(
+//            (diffuseTerm.x + specularTerm.x).coerceIn(0f, 1f) * 255,
+//            (diffuseTerm.y + specularTerm.y).coerceIn(0f, 1f) * 255,
+//            (diffuseTerm.z + specularTerm.z).coerceIn(0f, 1f) * 255
+//        )
+//
+//        return Color(resultColor.x.toInt(), resultColor.y.toInt(), resultColor.z.toInt())
+//    }
+
+
    fun calculateLightingForPoint(
     point: Vector3,
     triangle: Triangle,
@@ -239,68 +283,6 @@ class BezierViewModel : ViewModel() {
 
        return Color(resultColor.x.toInt(), resultColor.y.toInt(), resultColor.z.toInt())
    }
-
-
-    fun calculateLighting(triangle: Triangle, time: Float): Color {
-        // Get light position for current time
-        val lightPos = calculateLightPosition(time)
-
-        // Calculate light direction for current point
-        val centerPoint = (triangle.vertices[0].position +
-                triangle.vertices[1].position +
-                triangle.vertices[2].position) / 3.0f
-        val L = (lightPos - centerPoint).normalize()
-
-        // Calculate normal vector N for the triangle
-        val v0 = triangle.vertices[0].position
-        val v1 = triangle.vertices[1].position
-        val v2 = triangle.vertices[2].position
-        val edge1 = v1 - v0
-        val edge2 = v2 - v0
-        val N = edge1.cross(edge2).normalize()
-
-        // View vector (V) calculation
-        val V = Vector3(0f, 0f, 1f).normalize() // As specified in requirements
-
-        // Calculate R vector (reflection)
-        val cosNL = maxOf(N.dot(L), 0f)
-        val R = (N * (2f * cosNL) - L).normalize()
-
-        // Calculate lighting components according to the formula:
-        // I = kd*IL*Io*cos(kąt(N,L)) + ks*IL*Io*cos^m(kąt(V,R))
-        val cosVR = maxOf(V.dot(R), 0f)
-
-        // Use component-wise multiplication for vectors
-        val diffuseTerm = Vector3(
-            k_d.x * I_L.x * cosNL,
-            k_d.y * I_L.y * cosNL,
-            k_d.z * I_L.z * cosNL
-        )
-
-        val specularTerm = Vector3(
-            k_s.x * I_L.x * cosVR.pow(n),
-            k_s.y * I_L.y * cosVR.pow(n),
-            k_s.z * I_L.z * cosVR.pow(n)
-        )
-
-        // Calculate final color
-        val resultColor = Vector3(
-            (diffuseTerm.x + specularTerm.x),
-            (diffuseTerm.y + specularTerm.y),
-            (diffuseTerm.z + specularTerm.z)
-        )
-
-        // Convert to 0..1 range first, then to 0..255 as specified
-        val r = (resultColor.x).coerceIn(0f, 1f) * 255
-        val g = (resultColor.y).coerceIn(0f, 1f) * 255
-        val b = (resultColor.z).coerceIn(0f, 1f) * 255
-
-        return Color(
-            r.toInt().coerceIn(0, 255),
-            g.toInt().coerceIn(0, 255),
-            b.toInt().coerceIn(0, 255)
-        )
-    }
 
     private fun calculateTangentU(u: Float, v: Float): Vector3 {
         val pointsU = (0..3).map { i ->
