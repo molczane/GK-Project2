@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.utils.functions.drawTriangleOutline
 import molczane.gk.project2.utils.functions.fillPolygonWithScanLine
+import molczane.gk.project2.utils.functions.loadImage
 import molczane.gk.project2.utils.functions.rotatePoint
 import molczane.gk.project2.viewModel.BezierViewModel
 
@@ -26,6 +27,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     val rotationBeta by viewModel.rotationBeta.collectAsState()
     val triangulationAccuracy by viewModel.triangulationAccuracy.collectAsState()
     val currentTime by viewModel.currentTime.collectAsState()
+    val texture = loadImage("src/images/texture-1.png")
 
     Row(modifier = Modifier.fillMaxSize()) {
         val mesh by viewModel.mesh.collectAsState()
@@ -94,7 +96,11 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                                 triangle = transformedTriangle
                             )
                         },
-                        time = currentTime
+                        time = currentTime,
+//                        texture = texture,
+//                        calculateUVForPoint = { x, y, vertices, triangleVertices ->
+//                            viewModel.interpolateUV(x, y, vertices, triangleVertices)
+//                        }
                     )
                 }
                 else {
@@ -123,7 +129,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 modifier = Modifier.padding(8.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Beta rotation slider
             Text(
@@ -137,7 +143,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 modifier = Modifier.padding(8.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Triangulation accuracy slider
             Text(
@@ -153,7 +159,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
 
             // ... rest of the UI remains the same ...
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Toggle light animation
             Text(
@@ -171,7 +177,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Toggle between mesh and filled triangles
             Text(

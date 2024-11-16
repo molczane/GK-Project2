@@ -249,7 +249,6 @@ class BezierViewModel : ViewModel() {
     fun updateRotation(alpha: Float, beta: Float) {
         _rotationAlpha.value = alpha
         _rotationBeta.value = beta
-        // Don't call updateMesh() here as rotation doesn't affect the mesh geometry
     }
 
     fun updateTriangulation(accuracy: Int) {
@@ -268,6 +267,32 @@ class BezierViewModel : ViewModel() {
             spiralZ                   // Constant Z coordinate
         )
     }
+
+    fun interpolateUV(
+        x: Float,
+        y: Float,
+        vertices: List<Vector3>,
+        triangleVertices: List<Vertex>
+    ): Vector3 {
+        val p = Vector3(x, y, 0f)
+        val v0 = vertices[0]
+        val v1 = vertices[1]
+        val v2 = vertices[2]
+
+        // Compute barycentric weights
+        val denom = (v1.y - v2.y) * (v0.x - v2.x) + (v2.x - v1.x) * (v0.y - v2.y)
+        val w0 = ((v1.y - v2.y) * (p.x - v2.x) + (v2.x - v1.x) * (p.y - v2.y)) / denom
+        val w1 = ((v2.y - v0.y) * (p.x - v2.x) + (v0.x - v2.x) * (p.y - v2.y)) / denom
+        val w2 = 1f - w0 - w1
+
+        // Interpolate UV coordinates using barycentric weights
+        val uv0 = triangleVertices[0].uv
+        val uv1 = triangleVertices[1].uv
+        val uv2 = triangleVertices[2].uv
+
+        return (uv0 * w0) + (uv1 * w1) + (uv2 * w2)
+    }
+
 
 //    fun calculateLightingForPoint(
 //        point: Vector3,

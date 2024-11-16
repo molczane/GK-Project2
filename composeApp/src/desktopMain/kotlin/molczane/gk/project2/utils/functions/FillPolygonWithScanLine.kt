@@ -3,7 +3,9 @@ package molczane.gk.project2.utils.functions
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.toPixelMap
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.model.Vector3
 import molczane.gk.project2.model.Vertex
@@ -13,6 +15,80 @@ import kotlin.math.max
 import kotlin.math.min
 
 import kotlinx.coroutines.*
+
+// version with texture
+//fun DrawScope.fillPolygonWithScanLine(
+//    triangle: Triangle,
+//    texture: ImageBitmap,
+//    scale: Float = 100f,
+//    calculateColorForPoint: (point: Vector3) -> Color,
+//    time: Float,
+//    calculateUVForPoint: (x: Float, y: Float, vertices: List<Vector3>, triangleVertices: List<Vertex>) -> Vector3
+//) {
+//    val canvasCenterX = size.width / 2
+//    val canvasCenterY = size.height / 2
+//
+//    val vertices = listOf(
+//        triangle.vertices[0].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
+//        triangle.vertices[1].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
+//        triangle.vertices[2].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f)
+//    )
+//
+//    val sortedVertices = vertices.sortedBy { it.y }
+//    val yMin = sortedVertices.first().y.toInt()
+//    val yMax = sortedVertices.last().y.toInt()
+//
+//    val edgeTable = mutableListOf<Edge>()
+//    for (i in sortedVertices.indices) {
+//        val v1 = sortedVertices[i]
+//        val v2 = sortedVertices[(i + 1) % sortedVertices.size]
+//        if (v1.y != v2.y) {
+//            val ymin = floor(min(v1.y, v2.y)).toInt()
+//            val ymax = ceil(max(v1.y, v2.y)).toInt()
+//            val xMin = if (v1.y < v2.y) v1.x else v2.x
+//            val inverseSlope = (v2.x - v1.x) / (v2.y - v1.y)
+//            edgeTable.add(Edge(ymin, ymax, xMin, inverseSlope))
+//        }
+//    }
+//
+//    val activeEdgeTable = mutableListOf<Edge>()
+//    for (y in yMin until yMax) {
+//        activeEdgeTable.addAll(edgeTable.filter { it.yMin == y })
+//        activeEdgeTable.removeAll { it.yMax <= y }
+//        activeEdgeTable.sortBy { it.xMin }
+//
+//        for (i in activeEdgeTable.indices step 2) {
+//            if (i + 1 < activeEdgeTable.size) {
+//                val xStart = ceil(activeEdgeTable[i].xMin).toInt()
+//                val xEnd = floor(activeEdgeTable[i + 1].xMin).toInt()
+//
+//                for (x in xStart..xEnd) {
+//                    val interpolatedUV = calculateUVForPoint(
+//                        x.toFloat(),
+//                        y.toFloat(),
+//                        vertices,
+//                        triangle.vertices
+//                    )
+//                    val color = sampleTexture(texture, interpolatedUV)
+//                    drawRect(
+//                        color = color,
+//                        topLeft = Offset(x.toFloat(), y.toFloat()),
+//                        size = Size(1f, 1f)
+//                    )
+//                }
+//            }
+//        }
+//
+//        for (edge in activeEdgeTable) {
+//            edge.xMin += edge.inverseSlope
+//        }
+//    }
+//
+////    pixelBuffer.forEach { (offset, color) ->
+////        drawRect(color = color, topLeft = offset, size = Size(1f, 1f))
+////    }
+//
+//}
 
 // coroutines used in this function
 //fun DrawScope.fillPolygonWithScanLine(
@@ -97,13 +173,13 @@ import kotlinx.coroutines.*
 //}
 
 
-// a bit optimized version
+//// a bit optimized version
 fun DrawScope.fillPolygonWithScanLine(
     triangle: Triangle,
     scale: Float = 100f,
     calculateColorForPoint: (point: Vector3) -> Color,
-    time: Float
-) {
+    time: Float,
+    ) {
     val canvasCenterX = size.width / 2
     val canvasCenterY = size.height / 2
 
@@ -151,7 +227,8 @@ fun DrawScope.fillPolygonWithScanLine(
                         triangle.vertices
                     )
                     val pointColor = calculateColorForPoint(interpolatedPoint)
-                    pixelBuffer.add(Offset(x.toFloat(), y.toFloat()) to pointColor)
+                    drawRect(color = pointColor, topLeft = Offset(x.toFloat(), y.toFloat()), size = Size(1f, 1f))
+                    //pixelBuffer.add(Offset(x.toFloat(), y.toFloat()) to pointColor)
                 }
             }
         }
@@ -161,12 +238,13 @@ fun DrawScope.fillPolygonWithScanLine(
         }
     }
 
-    pixelBuffer.forEach { (offset, color) ->
-        drawRect(color = color, topLeft = offset, size = Size(1f, 1f))
-    }
+//    pixelBuffer.forEach { (offset, color) ->
+//        drawRect(color = color, topLeft = offset, size = Size(1f, 1f))
+//    }
+
 }
 
-// basic version
+//// basic version
 //fun DrawScope.fillPolygonWithScanLine(
 //    triangle: Triangle,
 //    scale: Float = 100f,
@@ -270,70 +348,11 @@ private fun interpolateBarycentric(
     return (p0 * w0) + (p1 * w1) + (p2 * w2)
 }
 
-// Edge function for barycentric coordinates
-private fun edgeFunction(v0: Vector3, v1: Vector3, p: Vector3): Float {
-    return (p.x - v0.x) * (v1.y - v0.y) - (p.y - v0.y) * (v1.x - v0.x)
-}
-
 // Edge data structure
 data class Edge(val yMin: Int, val yMax: Int, var xMin: Float, val inverseSlope: Float)
 
-// version with the same color for whole triangles
-//fun DrawScope.fillPolygonWithScanLine(triangle: Triangle,
-//                                      color: Color,
-//                                      scale: Float = 100f,
-//                                      calulateColorForPoint: (
-//                                          point: Vector3
-//                                      ) -> Color
-//) {
-//    val canvasCenterX = size.width / 2
-//    val canvasCenterY = size.height / 2
-//
-//    val vertices = listOf(
-//        triangle.vertices[0].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
-//        triangle.vertices[1].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
-//        triangle.vertices[2].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f)
-//    ).sortedBy { it.y }
-//
-//    val yMin = vertices.first().y.toInt()
-//    val yMax = ceil(vertices.last().y).toInt()
-//
-//    val edgeTable = mutableListOf<Edge>()
-//    for (i in vertices.indices) {
-//        val v1 = vertices[i]
-//        val v2 = vertices[(i + 1) % vertices.size]
-//        if (v1.y != v2.y) {
-//            val ymin = floor(min(v1.y, v2.y)).toInt()
-//            val ymax = ceil(max(v1.y, v2.y)).toInt()
-//            val xMin = if (v1.y < v2.y) v1.x else v2.x
-//            val inverseSlope = (v2.x - v1.x) / (v2.y - v1.y)
-//            edgeTable.add(Edge(ymin, ymax, xMin, inverseSlope))
-//        }
-//    }
-//
-//    val activeEdgeTable = mutableListOf<Edge>()
-//    for (y in yMin until yMax) {
-//        activeEdgeTable.addAll(edgeTable.filter { it.yMin == y })
-//        activeEdgeTable.removeAll { it.yMax <= y }
-//        activeEdgeTable.sortBy { it.xMin }
-//
-//        for (i in activeEdgeTable.indices step 2) {
-//            if (i + 1 < activeEdgeTable.size) {
-//                val xStart = ceil(activeEdgeTable[i].xMin).toInt()
-//                val xEnd = floor(activeEdgeTable[i + 1].xMin).toInt()
-//                drawRect(
-//                    color = color,
-//                    topLeft = Offset(xStart.toFloat(), y.toFloat()),
-//                    size = androidx.compose.ui.geometry.Size((xEnd - xStart).toFloat(), 1f)
-//                )
-//            }
-//        }
-//
-//        for (edge in activeEdgeTable) {
-//            edge.xMin += edge.inverseSlope
-//        }
-//    }
-//}
-//
-//// Edge data structure
-//data class Edge(val yMin: Int, val yMax: Int, var xMin: Float, val inverseSlope: Float)
+fun sampleTexture(texture: ImageBitmap, uv: Vector3): Color {
+    val x = ((uv.x * texture.width).coerceIn(0f, texture.width - 1f)).toInt()
+    val y = ((uv.y * texture.height).coerceIn(0f, texture.height - 1f)).toInt()
+    return texture.toPixelMap()[x, y]
+}
