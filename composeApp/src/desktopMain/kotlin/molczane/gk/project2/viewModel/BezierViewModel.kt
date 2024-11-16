@@ -118,26 +118,53 @@ class BezierViewModel : ViewModel() {
         return tempPoints[0]
     }
 
-    // Generate a mesh for the Bezier surface based on the control points
     private fun generateBezierMesh(): Mesh {
         val triangles = mutableListOf<Triangle>()
         val step = 1f / _triangulationAccuracy.value
+
         for (i in 0 until _triangulationAccuracy.value) {
             for (j in 0 until _triangulationAccuracy.value) {
                 val u = i * step
                 val v = j * step
-                val p1 = Vertex(interpolateBezierSurface(u, v))
-                val p2 = Vertex(interpolateBezierSurface(u + step, v))
-                val p3 = Vertex(interpolateBezierSurface(u, v + step))
-                val p4 = Vertex(interpolateBezierSurface(u + step, v + step))
 
-                // Create two triangles for each quad
-                triangles.add(Triangle(listOf(p1, p2, p3)))
-                triangles.add(Triangle(listOf(p2, p4, p3)))
+                // Oblicz pozycje wierzchołków
+                val p1 = interpolateBezierSurface(u, v)
+                val p2 = interpolateBezierSurface(u + step, v)
+                val p3 = interpolateBezierSurface(u, v + step)
+                val p4 = interpolateBezierSurface(u + step, v + step)
+
+                // Oblicz wektory styczne dla normalnych
+                val tangentU1 = calculateTangentU(u, v)
+                val tangentV1 = calculateTangentV(u, v)
+                val normal1 = tangentU1.cross(tangentV1).normalize()
+
+                val tangentU2 = calculateTangentU(u + step, v)
+                val tangentV2 = calculateTangentV(u + step, v)
+                val normal2 = tangentU2.cross(tangentV2).normalize()
+
+                val tangentU3 = calculateTangentU(u, v + step)
+                val tangentV3 = calculateTangentV(u, v + step)
+                val normal3 = tangentU3.cross(tangentV3).normalize()
+
+                val tangentU4 = calculateTangentU(u + step, v + step)
+                val tangentV4 = calculateTangentV(u + step, v + step)
+                val normal4 = tangentU4.cross(tangentV4).normalize()
+
+                // Twórz wierzchołki z normalnymi i UV
+                val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
+                val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
+                val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
+                val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
+
+                // Twórz dwa trójkąty dla każdego czworokąta
+                triangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
+                triangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
             }
         }
+
         return Mesh(triangles)
     }
+
 
     // Update rotation without regenerating mesh
     fun updateRotation(alpha: Float, beta: Float) {
