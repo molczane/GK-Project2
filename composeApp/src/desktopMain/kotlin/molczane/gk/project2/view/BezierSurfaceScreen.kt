@@ -76,10 +76,11 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                     fillPolygonWithScanLine(
                         triangle = transformedTriangle,
                         calculateColorForPoint = { point ->
-                            viewModel.calculateLightingForPoint(
+                            val calculateLightingForPoint = viewModel.calculateLightingForPoint(
                                 point = point,
                                 triangle = transformedTriangle
                             )
+                            calculateLightingForPoint
                         },
                         currentLightPos = currentLightPos.value
                     )

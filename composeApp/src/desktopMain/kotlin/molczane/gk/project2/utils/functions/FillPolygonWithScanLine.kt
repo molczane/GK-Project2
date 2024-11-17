@@ -271,6 +271,7 @@ private fun interpolateBarycentric(
     val p2 = triangleVertices[2].position
 
     return (p0 * w0) + (p1 * w1) + (p2 * w2)
+    //return (v0 * w0) + (v1 * w1) + (v2 * w2)
 }
 
 // Edge data structure
