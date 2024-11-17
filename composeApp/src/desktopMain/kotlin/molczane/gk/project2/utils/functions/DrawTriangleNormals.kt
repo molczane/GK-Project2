@@ -17,9 +17,9 @@ fun DrawScope.drawTriangleNormals(
 
     triangles.forEach { triangle ->
         // Scale and transform the vertices
-        val scaledVertices = triangle.vertices.map { vertex ->
-            vertex.position * scale + Vector3(canvasCenterX, canvasCenterY, 0f)
-        }
+//        val scaledVertices = triangle.vertices.map { vertex ->
+//            vertex.position * scale + Vector3(canvasCenterX, canvasCenterY, 0f)
+//        }
 
         // Calculate the barycentric center (geometric center of the triangle)
         val barycentricCenter = (

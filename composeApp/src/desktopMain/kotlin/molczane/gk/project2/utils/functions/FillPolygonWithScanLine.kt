@@ -228,7 +228,9 @@ fun DrawScope.fillPolygonWithScanLine(
                         triangle.vertices
                     )
                     val pointColor = calculateColorForPoint(interpolatedPoint)
-                    drawRect(color = pointColor, topLeft = Offset(x.toFloat(), y.toFloat()), size = Size(1.dp.toPx(), 1.dp.toPx()))
+                    drawRect(color = pointColor, topLeft = Offset(x.toFloat(), y.toFloat()),
+                        size = /*Size(1.dp.toPx(), 1.dp.toPx())*/ Size(0.8f, 0.8f)
+                    )
                     //pixelBuffer.add(Offset(x.toFloat(), y.toFloat()) to pointColor)
                 }
             }
