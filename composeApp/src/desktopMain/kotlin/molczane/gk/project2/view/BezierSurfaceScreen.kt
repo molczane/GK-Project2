@@ -60,12 +60,12 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             }
 
             // Draw the transformed normals
-            drawTriangleNormals(
-                triangles = transformedTriangles,
-                scale = 100f,
-                normalLength = 100f,
-                normalColor = Color.Red
-            )
+//            drawTriangleNormals(
+//                triangles = transformedTriangles,
+//                scale = 100f,
+//                normalLength = 100f,
+//                normalColor = Color.Red
+//            )
 
             // Render the transformed mesh
             transformedTriangles.forEach { transformedTriangle ->
