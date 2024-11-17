@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import molczane.gk.project2.model.Triangle
+import molczane.gk.project2.utils.functions.drawing.drawNormalMap
+import molczane.gk.project2.utils.functions.drawing.drawNormalsFromMap
 import molczane.gk.project2.utils.functions.drawing.drawTriangleNormals
 import molczane.gk.project2.utils.functions.drawing.drawTriangleOutline
 import molczane.gk.project2.utils.functions.drawing.fillPolygonWithScanLine
@@ -35,7 +37,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     val rotationBeta by viewModel.rotationBeta.collectAsState()
     val triangulationAccuracy by viewModel.triangulationAccuracy.collectAsState()
     val currentTime by viewModel.currentTime.collectAsState()
-    val texture = loadImage("src/images/texture-1.png")
+    val texture = loadImage("src/normal-maps/normal_map.jpg")
     val currentLightPos = viewModel.lightPos.collectAsState()
     val k_d = viewModel.k_d.collectAsState()
     val k_s = viewModel.k_s.collectAsState()
@@ -63,7 +65,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
 //            drawTriangleNormals(
 //                triangles = transformedTriangles,
 //                scale = 100f,
-//                normalLength = 100f,
+//                normalLength = 50f,
 //                normalColor = Color.Red
 //            )
 
@@ -85,6 +87,8 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                     )
                 }
             }
+
+            //drawNormalsFromMap(mesh, viewModel.normalMap)
         }
 
 
@@ -167,7 +171,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             Slider(
                 value = triangulationAccuracy.toFloat(),
                 onValueChange = { viewModel.updateTriangulation(it.toInt()) },
-                valueRange = 1f..80f,
+                valueRange = 1f..128f,
                 modifier = Modifier.padding(4.dp)
             )
 
