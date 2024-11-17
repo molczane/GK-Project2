@@ -12,10 +12,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import molczane.gk.project2.model.Triangle
-import molczane.gk.project2.utils.functions.drawNormals
-import molczane.gk.project2.utils.functions.drawTriangleNormals
-import molczane.gk.project2.utils.functions.drawTriangleOutline
-import molczane.gk.project2.utils.functions.fillPolygonWithScanLine
+import molczane.gk.project2.utils.functions.drawing.drawTriangleNormals
+import molczane.gk.project2.utils.functions.drawing.drawTriangleOutline
+import molczane.gk.project2.utils.functions.drawing.fillPolygonWithScanLine
 import molczane.gk.project2.utils.functions.loadImage
 import molczane.gk.project2.utils.functions.rotatePoint
 import molczane.gk.project2.viewModel.BezierViewModel

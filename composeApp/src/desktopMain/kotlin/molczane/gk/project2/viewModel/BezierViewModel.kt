@@ -24,7 +24,7 @@ class BezierViewModel : ViewModel() {
     // Stałe światła
     //private val k_d: Float = 0.5f
     //private val k_s: Float = 0.5f
-    private val I_L: Vector3 = Vector3(1f, 2f, 1f)
+    private val I_L: Vector3 = Vector3(1f, 1f, 1f)
     private val I_0: Vector3 = Vector3(1f, 1f, 1f)
     //private val m: Float = 1f
 
@@ -34,7 +34,7 @@ class BezierViewModel : ViewModel() {
     private val _k_s = MutableStateFlow(0.5f)
     val k_s: StateFlow<Float> = _k_s
 
-    private val _m = MutableStateFlow(0.5f)
+    private val _m = MutableStateFlow(100f)
     val m: StateFlow<Float> = _m
 
     private val _currentTime = MutableStateFlow(0f)

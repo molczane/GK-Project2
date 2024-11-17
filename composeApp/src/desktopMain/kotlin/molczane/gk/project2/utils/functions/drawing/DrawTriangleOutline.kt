@@ -1,4 +1,4 @@
-package molczane.gk.project2.utils.functions
+package molczane.gk.project2.utils.functions.drawing
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color

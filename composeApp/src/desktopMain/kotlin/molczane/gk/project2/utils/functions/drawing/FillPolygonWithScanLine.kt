@@ -1,4 +1,4 @@
-package molczane.gk.project2.utils.functions
+package molczane.gk.project2.utils.functions.drawing
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.toPixelMap
-import androidx.compose.ui.unit.dp
 import molczane.gk.project2.model.Triangle
 import molczane.gk.project2.model.Vector3
 import molczane.gk.project2.model.Vertex
@@ -14,8 +13,6 @@ import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
-
-import kotlinx.coroutines.*
 
 // version with texture
 //fun DrawScope.fillPolygonWithScanLine(
