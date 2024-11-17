@@ -262,6 +262,9 @@ class BezierViewModel : ViewModel() {
     fun updateRotation(alpha: Float, beta: Float) {
         _rotationAlpha.value = alpha
         _rotationBeta.value = beta
+        viewModelScope.launch {
+            _mesh.value = generateBezierMesh()
+        }
     }
 
     fun updateTriangulation(accuracy: Int) {
@@ -277,7 +280,7 @@ class BezierViewModel : ViewModel() {
     // Modified light position calculation to match requirements
     private fun calculateLightPosition(time: Float): Vector3 {
         val radius = 1.0f + time * 0.1f  // Spiral grows outward
-        val spiralZ = 3.2f  // Constant Z plane as per requirements
+        val spiralZ = 1.2f  // Constant Z plane as per requirements
 
         return Vector3(
             radius * cos(time * 2f),  // X coordinate
@@ -368,13 +371,9 @@ class BezierViewModel : ViewModel() {
             interpolateBezier1D(pointsV, v)
         }
 
-        // Oblicz różnice w kierunku U
-        var tangent = Vector3(0f, 0f, 0f)
-        for (i in 0 until pointsU.size - 1) {
-            tangent += (pointsU[i + 1] - pointsU[i]) * 3f * (1 - u).pow(2 - i) * u.pow(i)
-        }
-
-        return tangent
+        return (pointsU[1] - pointsU[0]) * (3 * (1 - u).pow(2)) +
+                (pointsU[2] - pointsU[1]) * (6 * (1 - u) * u) +
+                (pointsU[3] - pointsU[2]) * (3 * u.pow(2))
     }
 
     private fun calculateTangentV(u: Float, v: Float): Vector3 {
@@ -383,14 +382,41 @@ class BezierViewModel : ViewModel() {
             interpolateBezier1D(pointsU, u)
         }
 
-        // Oblicz różnice w kierunku V
-        var tangent = Vector3(0f, 0f, 0f)
-        for (j in 0 until pointsV.size - 1) {
-            tangent += (pointsV[j + 1] - pointsV[j]) * 3f * (1 - v).pow(2 - j) * v.pow(j)
-        }
-
-        return tangent
+        return (pointsV[1] - pointsV[0]) * (3 * (1 - v).pow(2)) +
+                (pointsV[2] - pointsV[1]) * (6 * (1 - v) * v) +
+                (pointsV[3] - pointsV[2]) * (3 * v.pow(2))
     }
+
+
+//    private fun calculateTangentU(u: Float, v: Float): Vector3 {
+//        val pointsU = (0..3).map { i ->
+//            val pointsV = (0..3).map { j -> controlPoints[i * 4 + j] }
+//            interpolateBezier1D(pointsV, v)
+//        }
+//
+//        // Oblicz różnice w kierunku U
+//        var tangent = Vector3(0f, 0f, 0f)
+//        for (i in 0 until pointsU.size - 1) {
+//            tangent += (pointsU[i + 1] - pointsU[i]) * 3f * (1 - u).pow(2 - i) * u.pow(i)
+//        }
+//
+//        return tangent
+//    }
+//
+//    private fun calculateTangentV(u: Float, v: Float): Vector3 {
+//        val pointsV = (0..3).map { j ->
+//            val pointsU = (0..3).map { i -> controlPoints[i * 4 + j] }
+//            interpolateBezier1D(pointsU, u)
+//        }
+//
+//        // Oblicz różnice w kierunku V
+//        var tangent = Vector3(0f, 0f, 0f)
+//        for (j in 0 until pointsV.size - 1) {
+//            tangent += (pointsV[j + 1] - pointsV[j]) * 3f * (1 - v).pow(2 - j) * v.pow(j)
+//        }
+//
+//        return tangent
+//    }
 
     // To be uncommented when the file is ready
     // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")

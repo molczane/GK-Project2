@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import molczane.gk.project2.model.Triangle
+import molczane.gk.project2.utils.functions.drawNormals
+import molczane.gk.project2.utils.functions.drawTriangleNormals
 import molczane.gk.project2.utils.functions.drawTriangleOutline
 import molczane.gk.project2.utils.functions.fillPolygonWithScanLine
 import molczane.gk.project2.utils.functions.loadImage
@@ -36,59 +38,31 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
         val coroutineScope = rememberCoroutineScope()
         var transformedTriangles by remember { mutableStateOf(emptyList<Pair<Triangle, Color>>()) }
 
-        // diffrent version
-//        Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
-//
-//            coroutineScope.launch(Dispatchers.Default) {
-//                // Perform calculations on a background thread
-//                val sortedTriangles = mesh.triangles.sortedByDescending { triangle ->
-//                    triangle.vertices.map { it.position.z }.average()
-//                }
-//
-//                val results = sortedTriangles.map { triangle ->
-//                    async {
-//                        val transformedVertices = triangle.vertices.map {
-//                            rotatePoint(it, rotationAlpha, rotationBeta)
-//                        }
-//                        val transformedTriangle = Triangle(transformedVertices)
-//                        val color =
-//                            viewModel.calculateLighting(transformedTriangle, currentTime)
-//                        transformedTriangle to color
-//                    }
-//                }.awaitAll()
-//
-//                // Update the state with the transformed triangles and colors on the main thread
-//                transformedTriangles = results
-//            }
-//
-//            transformedTriangles.forEach { (transformedTriangle, color) ->
-//                fillPolygonWithScanLine(
-//                    triangle = transformedTriangle,
-//                    color = if (isMeshMode) Color.Transparent else color
-//                )
-//                drawTriangleOutline(transformedTriangle, color)
-//            }
-//
-//        }
-
-        // Canvas occupying 80% of the available width
         Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
-            // Sort triangles by average Z depth for 3D-like rendering
             val sortedTriangles = mesh.triangles.sortedByDescending { triangle ->
                 triangle.vertices.map { it.position.z }.average()
             }
 
-            // Draw each triangle
-            sortedTriangles.forEach { triangle ->
-                // Apply rotation to each vertex in the triangle
+            val transformedTriangles = sortedTriangles.map { triangle ->
                 val transformedVertices = triangle.vertices.map {
                     rotatePoint(it, rotationAlpha, rotationBeta)
                 }
+                Triangle(transformedVertices)
+            }
 
-                // Create a new Triangle with transformed vertices
-                val transformedTriangle = Triangle(transformedVertices)
+            // Draw the transformed normals
+            drawTriangleNormals(
+                triangles = transformedTriangles,
+                scale = 100f,
+                normalLength = 100f,
+                normalColor = Color.Red
+            )
 
-                if(isMeshMode) {
+            // Render the transformed mesh
+            transformedTriangles.forEach { transformedTriangle ->
+                if (isMeshMode) {
+                    drawTriangleOutline(transformedTriangle, Color.Black)
+                } else {
                     fillPolygonWithScanLine(
                         triangle = transformedTriangle,
                         calculateColorForPoint = { point ->
@@ -98,17 +72,50 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                             )
                         },
                         currentLightPos = currentLightPos.value
-//                        texture = texture,
-//                        calculateUVForPoint = { x, y, vertices, triangleVertices ->
-//                            viewModel.interpolateUV(x, y, vertices, triangleVertices)
-//                        }
                     )
-                }
-                else {
-                    drawTriangleOutline(transformedTriangle, Color.Black)
                 }
             }
         }
+
+
+        // Canvas occupying 80% of the available width
+//        Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
+//            // Sort triangles by average Z depth for 3D-like rendering
+//            val sortedTriangles = mesh.triangles.sortedByDescending { triangle ->
+//                triangle.vertices.map { it.position.z }.average()
+//            }
+//
+//            // Draw each triangle
+//            sortedTriangles.forEach { triangle ->
+//                // Apply rotation to each vertex in the triangle
+//                val transformedVertices = triangle.vertices.map {
+//                    rotatePoint(it, rotationAlpha, rotationBeta)
+//                }
+//
+//                // Create a new Triangle with transformed vertices
+//                val transformedTriangle = Triangle(transformedVertices)
+//
+//                if(isMeshMode) {
+//                    fillPolygonWithScanLine(
+//                        triangle = transformedTriangle,
+//                        calculateColorForPoint = { point ->
+//                            viewModel.calculateLightingForPoint(
+//                                point = point,
+//                                triangle = transformedTriangle
+//                            )
+//                        },
+//                        currentLightPos = currentLightPos.value
+////                        texture = texture,
+////                        calculateUVForPoint = { x, y, vertices, triangleVertices ->
+////                            viewModel.interpolateUV(x, y, vertices, triangleVertices)
+////                        }
+//                    )
+//                }
+//                else {
+//                    drawTriangleOutline(transformedTriangle, Color.Black)
+//                }
+//            }
+//        }
 
         // Updated control panel
         Column(
@@ -140,7 +147,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
             Slider(
                 value = rotationBeta,
                 onValueChange = { viewModel.updateRotation(rotationAlpha, it) },
-                valueRange = 0f..4*0.17453292f,
+                valueRange = 0f..8*0.17453292f,
                 modifier = Modifier.padding(8.dp)
             )
 
