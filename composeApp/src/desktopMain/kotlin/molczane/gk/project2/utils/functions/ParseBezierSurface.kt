@@ -10,7 +10,7 @@ fun parseBezierSurface(filePath: String): List<Vertex> {
     File(filePath).useLines { lines ->
         lines.forEach { line ->
             val (x, y, z) = line.split(" ").map { it.toFloat() }
-            controlPoints.add(Vertex(Vector3(x, y, z))) // Create Vertex with Vector3 position
+            //controlPoints.add(Vertex(Vector3(x, y, z))) // Create Vertex with Vector3 position
         }
     }
     return controlPoints
