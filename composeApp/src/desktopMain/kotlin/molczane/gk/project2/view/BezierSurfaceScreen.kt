@@ -27,9 +27,10 @@ import java.awt.Frame
 fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     var isMeshMode by remember { mutableStateOf(true) } // Toggle between mesh and filled mode
 
-    var showDialog by remember { mutableStateOf(true) }
+    var showDialog by remember { mutableStateOf(false) }
     var selectedFile by remember { mutableStateOf<String?>(null) }
 
+    val isNormalMappingTurnedOn by viewModel.isNormalMappingTurnedOn.collectAsState()
 
     // Collect all StateFlow values
     val rotationAlpha by viewModel.rotationAlpha.collectAsState()
@@ -77,13 +78,22 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                     fillPolygonWithScanLine(
                         triangle = transformedTriangle,
                         calculateColorForPoint = { point ->
-                            val calculateLightingForPoint = viewModel.calculateLightingForPoint(
+                            val calculateLightingForPoint = viewModel.calculateLightingForPointWithTexture(
                                 point = point,
                                 triangle = transformedTriangle
                             )
                             calculateLightingForPoint
                         },
                         currentLightPos = currentLightPos.value
+                        //}
+//                        calculateColorForPoint = { point ->
+//                            val calculateLightingForPoint = viewModel.calculateLightingForPoint(
+//                                point = point,
+//                                triangle = transformedTriangle
+//                            )
+//                            calculateLightingForPoint
+//                        },
+//                        currentLightPos = currentLightPos.value
                     )
                 }
             }
@@ -240,6 +250,18 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 )
                 Text(text = "Mesh")
             }
+
+            Button(
+                modifier = Modifier.padding(8.dp),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray),
+                onClick = {
+                    viewModel.updateNormalMapping(true, openFileDialog("src/normal-maps"))
+                    //openFileDialog("src/normal-maps")
+                }
+            ) {
+                Text("Chose normal map")
+            }
+
         }
     }
 
@@ -259,7 +281,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                     Text("Choose a file", style = MaterialTheme.typography.h6)
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = {
-                        selectedFile = openFileDialog()
+                        selectedFile = openFileDialog("src/normal-maps")
                         showDialog = false
                     }) {
                         Text("Open File Dialog")
@@ -273,8 +295,9 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     }
 }
 
-fun openFileDialog(): String? {
+fun openFileDialog(defaultDirectory: String = System.getProperty("user.home")): String? {
     val fileDialog = FileDialog(null as Frame?, "Select a File", FileDialog.LOAD)
+    fileDialog.directory = defaultDirectory // Set the default directory
     fileDialog.isVisible = true
     return fileDialog.file?.let { fileDialog.directory + it }
 }

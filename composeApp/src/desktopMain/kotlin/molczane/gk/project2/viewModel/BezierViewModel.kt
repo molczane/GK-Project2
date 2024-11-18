@@ -16,6 +16,7 @@ import kotlin.math.pow
 import molczane.gk.project2.utils.functions.cross
 import molczane.gk.project2.utils.functions.loadNormalMap
 import molczane.gk.project2.utils.functions.interpolateNormal
+import molczane.gk.project2.utils.functions.loadTexture
 import molczane.gk.project2.utils.functions.times
 import kotlin.math.cos
 import kotlin.math.sin
@@ -47,17 +48,25 @@ class BezierViewModel : ViewModel() {
     private val _isLightAnimationRunning = MutableStateFlow(false)
     val isLightAnimationRunning: StateFlow<Boolean> = _isLightAnimationRunning
 
+    private val _isTextureTurnedOn = MutableStateFlow(true)
+    val isTextureTurnedOn: StateFlow<Boolean> = _isTextureTurnedOn
+
+    private val _isNormalMappingTurnedOn = MutableStateFlow(false)
+    val isNormalMappingTurnedOn: StateFlow<Boolean> = _isNormalMappingTurnedOn
 
     private val _lightPos = MutableStateFlow(Vector3(0f, 0f, 0f))
     val lightPos: StateFlow<Vector3> = _lightPos
 
-    val normalMap : Array<Array<Vector3>>
+    var normalMap : Array<Array<Vector3>>
+
+    var texture: Array<Array<Color>>
 
     init {
         if(_isLightAnimationRunning.value) {
             startLightAnimation()
         }
         normalMap = invertNormals(loadNormalMap("src/normal-maps/brick_normalmap.png"))
+        texture = loadTexture("src/images/people-texture.png")
     }
 
     private fun startLightAnimation() {
@@ -170,9 +179,17 @@ class BezierViewModel : ViewModel() {
         return tempPoints[0]
     }
 
+    private fun generateBezierMesh(): Mesh {
+        if(_isNormalMappingTurnedOn.value) {
+            return generateBezierMeshWithMap()
+        }
+        else {
+            return generateBezierMeshNormal()
+        }
+    }
 
     // normals calculated and from map combined
-    private fun generateBezierMesh(): Mesh {
+    private fun generateBezierMeshWithMap(): Mesh {
         val triangles = mutableListOf<Triangle>()
         val step = 1f / _triangulationAccuracy.value
 
@@ -230,90 +247,53 @@ class BezierViewModel : ViewModel() {
         return Mesh(triangles)
     }
 
-    // normals from map
-//    private fun generateBezierMesh(): Mesh {
-//        val triangles = mutableListOf<Triangle>()
-//        val step = 1f / _triangulationAccuracy.value
-//
-//        for (i in 0 until _triangulationAccuracy.value) {
-//            for (j in 0 until _triangulationAccuracy.value) {
-//                val u = i * step
-//                val v = j * step
-//
-//                // Compute vertex positions
-//                val p1 = interpolateBezierSurface(u, v)
-//                val p2 = interpolateBezierSurface(u + step, v)
-//                val p3 = interpolateBezierSurface(u, v + step)
-//                val p4 = interpolateBezierSurface(u + step, v + step)
-//
-//                // Interpolate normals from the normal map
-//                val normal1 = interpolateNormalFromMap(u, v, normalMap)
-//                val normal2 = interpolateNormalFromMap(u + step, v, normalMap)
-//                val normal3 = interpolateNormalFromMap(u, v + step, normalMap)
-//                val normal4 = interpolateNormalFromMap(u + step, v + step, normalMap)
-//
-//                // Create vertices with interpolated normals
-//                val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
-//                val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
-//                val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
-//                val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
-//
-//                // Create two triangles for each quad
-//                triangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
-//                triangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
-//            }
-//        }
-//
-//        return Mesh(triangles)
-//    }
-
     // traditional
-//    private fun generateBezierMesh(): Mesh {
-//        val triangles = mutableListOf<Triangle>()
-//        val step = 1f / _triangulationAccuracy.value
-//
-//        for (i in 0 until _triangulationAccuracy.value) {
-//            for (j in 0 until _triangulationAccuracy.value) {
-//                val u = i * step
-//                val v = j * step
-//
-//                // Oblicz pozycje wierzchołków
-//                val p1 = interpolateBezierSurface(u, v)
-//                val p2 = interpolateBezierSurface(u + step, v)
-//                val p3 = interpolateBezierSurface(u, v + step)
-//                val p4 = interpolateBezierSurface(u + step, v + step)
-//
-//                // Oblicz wektory styczne dla normalnych
-//                val tangentU1 = calculateTangentU(u, v)
-//                val tangentV1 = calculateTangentV(u, v)
-//                val normal1 = tangentU1.cross(tangentV1).normalize()
-//
-//                val tangentU2 = calculateTangentU(u + step, v)
-//                val tangentV2 = calculateTangentV(u + step, v)
-//                val normal2 = tangentU2.cross(tangentV2).normalize()
-//
-//                val tangentU3 = calculateTangentU(u, v + step)
-//                val tangentV3 = calculateTangentV(u, v + step)
-//                val normal3 = tangentU3.cross(tangentV3).normalize()
-//
-//                val tangentU4 = calculateTangentU(u + step, v + step)
-//                val tangentV4 = calculateTangentV(u + step, v + step)
-//                val normal4 = tangentU4.cross(tangentV4).normalize()
-//
-//                // Twórz wierzchołki z normalnymi i UV
-//                val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
-//                val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
-//                val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
-//                val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
-//
-//                // Twórz dwa trójkąty dla każdego czworokąta
-//                triangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
-//                triangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
-//            }
-//        }
-//
-//        return Mesh(triangles)
-//    }
+    private fun generateBezierMeshNormal(): Mesh {
+        val triangles = mutableListOf<Triangle>()
+        val step = 1f / _triangulationAccuracy.value
+
+        for (i in 0 until _triangulationAccuracy.value) {
+            for (j in 0 until _triangulationAccuracy.value) {
+                val u = i * step
+                val v = j * step
+
+                // Oblicz pozycje wierzchołków
+                val p1 = interpolateBezierSurface(u, v)
+                val p2 = interpolateBezierSurface(u + step, v)
+                val p3 = interpolateBezierSurface(u, v + step)
+                val p4 = interpolateBezierSurface(u + step, v + step)
+
+                // Oblicz wektory styczne dla normalnych
+                val tangentU1 = calculateTangentU(u, v)
+                val tangentV1 = calculateTangentV(u, v)
+                val normal1 = tangentU1.cross(tangentV1).normalize()
+
+                val tangentU2 = calculateTangentU(u + step, v)
+                val tangentV2 = calculateTangentV(u + step, v)
+                val normal2 = tangentU2.cross(tangentV2).normalize()
+
+                val tangentU3 = calculateTangentU(u, v + step)
+                val tangentV3 = calculateTangentV(u, v + step)
+                val normal3 = tangentU3.cross(tangentV3).normalize()
+
+                val tangentU4 = calculateTangentU(u + step, v + step)
+                val tangentV4 = calculateTangentV(u + step, v + step)
+                val normal4 = tangentU4.cross(tangentV4).normalize()
+
+                // Twórz wierzchołki z normalnymi i UV
+                val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
+                val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
+                val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
+                val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
+
+                // Twórz dwa trójkąty dla każdego czworokąta
+                triangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
+                triangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
+            }
+        }
+
+        return Mesh(triangles)
+    }
 
 
     // Update rotation without regenerating mesh
@@ -338,11 +318,6 @@ class BezierViewModel : ViewModel() {
     fun calculateLightingForPoint(
         point: Vector3,
         triangle: Triangle,
-//        k_d: Float = 0.5f,
-//        k_s: Float = 0.5f,
-//        I_L: Vector3 = Vector3(1f, 2f, 1f),
-//        I_0: Vector3 = Vector3(1f, 1f, 1f),
-//        m: Float = 1f
     ): Color {
         // pozycja światła
         val lightPos = _lightPos.value
@@ -382,6 +357,80 @@ class BezierViewModel : ViewModel() {
         return Color(r, g, b)
     }
 
+    fun calculateLightingForPointWithTexture(
+        point: Vector3,
+        triangle: Triangle
+    ): Color {
+        // Light position
+        val lightPos = _lightPos.value
+
+        // Interpolated normal using barycentric coordinates
+        val interpolatedNormal = interpolateNormal(point, triangle)
+        val N = interpolatedNormal.normalize()
+
+        // Light direction
+        val L = (lightPos - point).normalize()
+
+        // View direction (assuming the observer is at a fixed camera position)
+        val V = Vector3(0f, 0f, -5f).normalize()
+
+        // Reflection vector
+        val R = (N * (2f * N.dot(L)) - L).normalize()
+
+        // Diffuse and specular components
+        val cosNL = maxOf(N.dot(L), 0f)
+        val cosVR = maxOf(V.dot(R), 0f)
+
+        val diffuse = I_0 * k_d.value * I_L * cosNL
+        val specular = I_0 * k_s.value * I_L * cosVR.pow(m.value)
+
+        // Interpolate UV coordinates using barycentric interpolation
+        val interpolatedUV = interpolateUV(point, triangle.vertices)
+
+        // Map UV coordinates to texture coordinates
+        val texWidth = texture.size
+        val texHeight = texture[0].size
+        val texU = (interpolatedUV.x * (texWidth - 1)).toInt().coerceIn(0, texWidth - 1)
+        val texV = (interpolatedUV.y * (texHeight - 1)).toInt().coerceIn(0, texHeight - 1)
+
+        // Sample texture color
+        val textureColor = texture[texU][texV]
+
+        // Combine texture color with lighting
+        val resultColor = Vector3(
+            textureColor.red * (diffuse.x + specular.x),
+            textureColor.green * (diffuse.y + specular.y),
+            textureColor.blue * (diffuse.z + specular.z)
+        )
+
+        // Clamp values to [0, 1] and convert to 255 scale
+        val r = (resultColor.x.coerceIn(0f, 1f) * 255).toInt()
+        val g = (resultColor.y.coerceIn(0f, 1f) * 255).toInt()
+        val b = (resultColor.z.coerceIn(0f, 1f) * 255).toInt()
+
+        return Color(r, g, b)
+    }
+
+    // Interpolate UV coordinates
+    fun interpolateUV(point: Vector3, vertices: List<Vertex>): Vector3 {
+        val v0 = vertices[0]
+        val v1 = vertices[1]
+        val v2 = vertices[2]
+
+        val denom = ((v1.position.y - v2.position.y) * (v0.position.x - v2.position.x) +
+                (v2.position.x - v1.position.x) * (v0.position.y - v2.position.y))
+
+        val w0 = ((v1.position.y - v2.position.y) * (point.x - v2.position.x) +
+                (v2.position.x - v1.position.x) * (point.y - v2.position.y)) / denom
+
+        val w1 = ((v2.position.y - v0.position.y) * (point.x - v2.position.x) +
+                (v0.position.x - v2.position.x) * (point.y - v2.position.y)) / denom
+
+        val w2 = 1f - w0 - w1
+
+        return v0.uv * w0 + v1.uv * w1 + v2.uv * w2
+    }
+
     private fun calculateTangentU(u: Float, v: Float): Vector3 {
         val pointsU = (0..3).map { i ->
             val pointsV = (0..3).map { j -> controlPoints[i * 4 + j] }
@@ -414,6 +463,14 @@ class BezierViewModel : ViewModel() {
 
     fun updateM(it: Float) {
         _m.value = it
+    }
+
+    fun updateNormalMapping(it: Boolean, file: String?) {
+        _isNormalMappingTurnedOn.value = it
+        normalMap = invertNormals(loadNormalMap(file!!))
+        viewModelScope.launch {
+            _mesh.value = generateBezierMesh()
+        }
     }
 
     fun interpolateNormalFromMap(
@@ -516,6 +573,43 @@ class BezierViewModel : ViewModel() {
 //        // Czekaj na wyniki wszystkich zadań
 //        val triangles = runBlocking {
 //            tasks.awaitAll().flatten()
+//        }
+//
+//        return Mesh(triangles)
+//    }
+
+// normals from map
+//    private fun generateBezierMesh(): Mesh {
+//        val triangles = mutableListOf<Triangle>()
+//        val step = 1f / _triangulationAccuracy.value
+//
+//        for (i in 0 until _triangulationAccuracy.value) {
+//            for (j in 0 until _triangulationAccuracy.value) {
+//                val u = i * step
+//                val v = j * step
+//
+//                // Compute vertex positions
+//                val p1 = interpolateBezierSurface(u, v)
+//                val p2 = interpolateBezierSurface(u + step, v)
+//                val p3 = interpolateBezierSurface(u, v + step)
+//                val p4 = interpolateBezierSurface(u + step, v + step)
+//
+//                // Interpolate normals from the normal map
+//                val normal1 = interpolateNormalFromMap(u, v, normalMap)
+//                val normal2 = interpolateNormalFromMap(u + step, v, normalMap)
+//                val normal3 = interpolateNormalFromMap(u, v + step, normalMap)
+//                val normal4 = interpolateNormalFromMap(u + step, v + step, normalMap)
+//
+//                // Create vertices with interpolated normals
+//                val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
+//                val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
+//                val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
+//                val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
+//
+//                // Create two triangles for each quad
+//                triangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
+//                triangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
+//            }
 //        }
 //
 //        return Mesh(triangles)
