@@ -39,6 +39,10 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
 
     val mesh by viewModel.mesh.collectAsState()
 
+    val isRedReflectorTurnedOn = viewModel.isRedLightTurnedOn.collectAsState()
+    val isGreenReflectorTurnedOn = viewModel.isGreenLightTurnedOn.collectAsState()
+    val isBlueReflectorTurnedOn = viewModel.isBlueLightTurnedOn.collectAsState()
+
     Row(modifier = Modifier.fillMaxSize()) {
 
         Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
@@ -244,6 +248,49 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
             ) {
                 Text("Turn off normal mapping", fontSize = 10.sp)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly // Dostosuj rozmieszczenie
+            ) {
+                Button(
+                    onClick = {
+                        if (isRedReflectorTurnedOn.value) {
+                            viewModel.updateRedReflector(false)
+                        } else {
+                            viewModel.updateRedReflector(true)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+                ) {
+                    Text("Red Reflector", fontSize = 10.sp)
+                }
+
+                Button(
+                    onClick = {
+                        if (isGreenReflectorTurnedOn.value) {
+                            viewModel.updateGreenReflector(false)
+                        } else {
+                            viewModel.updateGreenReflector(true)
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+                ) {
+                    Text("Green Reflector", fontSize = 10.sp)
+                }
+            }
+            Button(
+                onClick = {
+                    if (isBlueReflectorTurnedOn.value) {
+                        viewModel.updateBlueReflector(false)
+                    } else {
+                        viewModel.updateBlueReflector(true)
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+            ) {
+                Text("Blue Reflector", fontSize = 10.sp)
             }
         }
     }

@@ -29,6 +29,41 @@ class BezierViewModel : ViewModel() {
     private val _k_d = MutableStateFlow(0.5f)
     val k_d: StateFlow<Float> = _k_d
 
+    /* LAB PART */
+    private val _isRedLightTurnedOn = MutableStateFlow(true)
+    val isRedLightTurnedOn: StateFlow<Boolean> = _isRedLightTurnedOn
+
+    private val _isBlueLightTurnedOn = MutableStateFlow(true)
+    val isBlueLightTurnedOn: StateFlow<Boolean> = _isBlueLightTurnedOn
+
+    private val _isGreenLightTurnedOn = MutableStateFlow(true)
+    val isGreenLightTurnedOn: StateFlow<Boolean> = _isGreenLightTurnedOn
+
+    private var I_R: Vector3 = Vector3(1f, 0f, 0f)
+    private var I_G: Vector3 = Vector3(0f, 1f, 0f)
+    private var I_B: Vector3 = Vector3(0f, 0f, 1f)
+
+    private val lightPosRed = Vector3(5f, 5f, 3f)
+    private val lightPosBlue = Vector3(-5f, 5f, 3f)
+    private val lightPosGreen = Vector3(-5f, -5f, 3f)
+
+    // Dodaj kierunki reflektorów
+    private val spotlightDirRed = (Vector3(0f, 0f, 0f) - lightPosRed).normalize()
+    private val spotlightDirBlue = (Vector3(0f, 0f, 0f) - lightPosBlue).normalize()
+    private val spotlightDirGreen = (Vector3(0f, 0f, 0f) - lightPosGreen).normalize()
+
+    // Funkcja skupienia reflektora
+    private fun spotlightIntensity(L: Vector3, spotlightDir: Vector3, cutoffAngle: Float): Float {
+        spotlightDir.normalize()
+        val cosTheta = L.dot(spotlightDir.normalize())
+        return if (cosTheta >= cos(cutoffAngle)) {
+            cosTheta.pow(1) // Możesz dopasować wykładnik, aby kontrolować "ostrość" skupienia
+        } else {
+            0f
+        }
+    }
+    /* LAB PART */
+
     private val _k_s = MutableStateFlow(0.5f)
     val k_s: StateFlow<Float> = _k_s
 
@@ -107,12 +142,6 @@ class BezierViewModel : ViewModel() {
         animationJob?.cancel()
     }
 
-    // Light direction vector (e.g., from above and to the right)
-    private val lightDirection = Vector3(1.0f, 1.0f, 1.0f).normalize()
-
-    // Camera/view direction vector (assuming it's from the z-axis)
-    private val viewDirection = Vector3(0.0f, 0.0f, 1.0f).normalize()
-
     // Define control points for the Bezier surface with values in the range -5 to 5
 //    private val controlPoints = listOf(
 //        Vector3(-5f, -5f, 0f), Vector3(-1.65f, -5f, 1f), Vector3(1.65f, -5f, 0.5f), Vector3(5f, -5f, 0f),
@@ -121,18 +150,18 @@ class BezierViewModel : ViewModel() {
 //        Vector3(-5f, 5f, 0f), Vector3(-1.65f, 5f, 1f), Vector3(1.65f, 5f, 0.5f), Vector3(5f, 5f, 0f)
 //    )
 
-    private val controlPoints = listOf(
-        Vector3(-5f, -5f, 2f),  Vector3(-1.65f, -5f, -1f), Vector3(1.65f, -5f, 3f),   Vector3(5f, -5f, -2f),
-        Vector3(-5f, -1.65f, -1f), Vector3(-1.65f, -1.65f, 4f), Vector3(1.65f, -1.65f, -3f), Vector3(5f, -1.65f, 2f),
-        Vector3(-5f, 1.65f, 3f), Vector3(-1.65f, 1.65f, -4f), Vector3(1.65f, 1.65f, 5f), Vector3(5f, 1.65f, -1f),
-        Vector3(-5f, 5f, -2f),  Vector3(-1.65f, 5f, 1f),  Vector3(1.65f, 5f, -2f),  Vector3(5f, 5f, 2f)
-        )
 //    private val controlPoints = listOf(
-//        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
-//        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
-//        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
-//        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
-//    )
+//        Vector3(-5f, -5f, 2f),  Vector3(-1.65f, -5f, -1f), Vector3(1.65f, -5f, 3f),   Vector3(5f, -5f, -2f),
+//        Vector3(-5f, -1.65f, -1f), Vector3(-1.65f, -1.65f, 4f), Vector3(1.65f, -1.65f, -3f), Vector3(5f, -1.65f, 2f),
+//        Vector3(-5f, 1.65f, 3f), Vector3(-1.65f, 1.65f, -4f), Vector3(1.65f, 1.65f, 5f), Vector3(5f, 1.65f, -1f),
+//        Vector3(-5f, 5f, -2f),  Vector3(-1.65f, 5f, 1f),  Vector3(1.65f, 5f, -2f),  Vector3(5f, 5f, 2f)
+//        )
+    private val controlPoints = listOf(
+        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
+        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
+        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
+        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
+    )
 
 
 
@@ -311,7 +340,80 @@ class BezierViewModel : ViewModel() {
 //        _mesh.value = generateBezierMesh() // Regenerate mesh with new accuracy
     }
 
+
+    // wersja z reflektorami
+    // Zmodyfikowana funkcja obliczania oświetlenia
     fun calculateLightingForPoint(
+        point: Vector3,
+        triangle: Triangle,
+    ): Color {
+        val interpolatedNormal = interpolateNormal(point, triangle)
+        val N = interpolatedNormal.normalize()
+
+        // Kierunki światła dla każdego reflektora
+//        val L_red = (lightPosRed - point).normalize()
+//        val L_blue = (lightPosBlue - point).normalize()
+//        val L_green = (lightPosGreen - point).normalize()
+
+        val L_red = (point - lightPosRed).normalize()
+        val L_blue = (point - lightPosBlue).normalize()
+        val L_green = (point - lightPosGreen).normalize()
+
+        val V = Vector3(0f, 0f, -5f).normalize()
+
+        // Skupienie dla każdego reflektora
+        var intensityRed = spotlightIntensity(L_red, spotlightDirRed, Math.toRadians(30.0).toFloat())
+        var intensityBlue = spotlightIntensity(L_blue, spotlightDirBlue, Math.toRadians(30.0).toFloat())
+        var intensityGreen = spotlightIntensity(L_green, spotlightDirGreen, Math.toRadians(30.0).toFloat())
+
+        if(intensityRed > 0) ;
+            //println("Red intensity: $intensityRed")
+
+        // Rozproszone i zwierciadlane składowe
+        val cosNL_red = maxOf(N.dot(L_red), 0f)
+        val cosNL_blue = maxOf(N.dot(L_blue), 0f)
+        val cosNL_green = maxOf(N.dot(L_green), 0f)
+
+        val R_red = (N * (2f * N.dot(L_red)) - L_red).normalize()
+        val R_blue = (N * (2f * N.dot(L_blue)) - L_blue).normalize()
+        val R_green = (N * (2f * N.dot(L_green)) - L_green).normalize()
+
+        val cosVR_red = maxOf(V.dot(R_red), 0f)
+        val cosVR_blue = maxOf(V.dot(R_blue), 0f)
+        val cosVR_green = maxOf(V.dot(R_green), 0f)
+
+        val diffuseRed = I_0 * k_d.value * I_R * cosNL_red * intensityRed
+        val diffuseBlue = I_0 * k_d.value * I_B * cosNL_blue * intensityBlue
+        val diffuseGreen = I_0 * k_d.value * I_G * cosNL_green * intensityGreen
+
+        val specularRed = I_0 * k_s.value * I_R * cosVR_red.pow(m.value) * intensityRed
+        val specularBlue = I_0 * k_s.value * I_B * cosVR_blue.pow(m.value) * intensityBlue
+        val specularGreen = I_0 * k_s.value * I_G * cosVR_green.pow(m.value) * intensityGreen
+
+        var resultColor = Vector3(0f, 0f, 0f)
+
+        if(_isRedLightTurnedOn.value) {
+            resultColor += diffuseRed + specularRed
+        }
+        if(_isBlueLightTurnedOn.value) {
+            resultColor += diffuseBlue + specularBlue
+        }
+        if(_isGreenLightTurnedOn.value) {
+            resultColor += diffuseGreen + specularGreen
+        }
+        //val resultColor = diffuseRed + specularRed + diffuseBlue + specularBlue + diffuseGreen + specularGreen
+
+        val r = (resultColor.x.coerceIn(0f, 1f) * 255).toInt()
+        val g = (resultColor.y.coerceIn(0f, 1f) * 255).toInt()
+        val b = (resultColor.z.coerceIn(0f, 1f) * 255).toInt()
+
+        val colorFromWhite = calculateLightingForPointNormal(point, triangle)
+
+        return Color(resultColor.x + colorFromWhite.red, resultColor.y + colorFromWhite.green, resultColor.z + colorFromWhite.blue)
+    }
+
+
+    fun calculateLightingForPointNormal(
         point: Vector3,
         triangle: Triangle,
     ): Color {
@@ -530,6 +632,17 @@ class BezierViewModel : ViewModel() {
         }.toTypedArray()
     }
 
+    fun updateRedReflector(it: Boolean) {
+        _isRedLightTurnedOn.value = it
+    }
+
+    fun updateGreenReflector(it: Boolean) {
+        _isGreenLightTurnedOn.value = it
+    }
+
+    fun updateBlueReflector(it: Boolean) {
+        _isBlueLightTurnedOn.value = it
+    }
 
     // To be uncommented when the file is ready
     // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")
