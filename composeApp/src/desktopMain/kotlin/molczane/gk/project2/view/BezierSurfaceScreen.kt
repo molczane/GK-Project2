@@ -10,45 +10,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import molczane.gk.project2.model.Triangle
-import molczane.gk.project2.utils.functions.drawing.drawNormalMap
-import molczane.gk.project2.utils.functions.drawing.drawNormalsFromMap
-import molczane.gk.project2.utils.functions.drawing.drawTriangleNormals
+import molczane.gk.project2.model.Vector3
 import molczane.gk.project2.utils.functions.drawing.drawTriangleOutline
 import molczane.gk.project2.utils.functions.drawing.fillPolygonWithScanLine
-import molczane.gk.project2.utils.functions.loadImage
 import molczane.gk.project2.utils.functions.rotatePoint
 import molczane.gk.project2.viewModel.BezierViewModel
 import java.awt.FileDialog
 import java.awt.Frame
+import javax.swing.JColorChooser
 
 @Composable
 fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     var isMeshMode by remember { mutableStateOf(true) } // Toggle between mesh and filled mode
 
-    var showDialog by remember { mutableStateOf(false) }
-    var selectedFile by remember { mutableStateOf<String?>(null) }
-
     val isNormalMappingTurnedOn by viewModel.isNormalMappingTurnedOn.collectAsState()
+    val isTextureTurnedOn by viewModel.isTextureTurnedOn.collectAsState()
 
     // Collect all StateFlow values
     val rotationAlpha by viewModel.rotationAlpha.collectAsState()
     val isLightAnimationRunning by viewModel.isLightAnimationRunning.collectAsState()
     val rotationBeta by viewModel.rotationBeta.collectAsState()
     val triangulationAccuracy by viewModel.triangulationAccuracy.collectAsState()
-    val currentTime by viewModel.currentTime.collectAsState()
-    val texture = loadImage("src/normal-maps/normal_map.jpg")
     val currentLightPos = viewModel.lightPos.collectAsState()
     val k_d = viewModel.k_d.collectAsState()
     val k_s = viewModel.k_s.collectAsState()
     val m = viewModel.m.collectAsState()
 
-    Row(modifier = Modifier.fillMaxSize()) {
-        val mesh by viewModel.mesh.collectAsState()
+    val mesh by viewModel.mesh.collectAsState()
 
-        val coroutineScope = rememberCoroutineScope()
-        //var transformedTriangles by remember { mutableStateOf(emptyList<Pair<Triangle, Color>>()) }
+    Row(modifier = Modifier.fillMaxSize()) {
 
         Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
             val sortedTriangles = mesh.triangles.sortedByDescending { triangle ->
@@ -62,7 +53,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 Triangle(transformedVertices)
             }
 
-            // Draw the transformed normals
+            // Draw the transformed normals if needed
 //            drawTriangleNormals(
 //                triangles = transformedTriangles,
 //                scale = 100f,
@@ -75,221 +66,184 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 if (isMeshMode) {
                     drawTriangleOutline(transformedTriangle, Color.Black)
                 } else {
-                    fillPolygonWithScanLine(
-                        triangle = transformedTriangle,
-                        calculateColorForPoint = { point ->
-                            val calculateLightingForPoint = viewModel.calculateLightingForPointWithTexture(
-                                point = point,
-                                triangle = transformedTriangle
-                            )
-                            calculateLightingForPoint
-                        },
-                        currentLightPos = currentLightPos.value
-                        //}
-//                        calculateColorForPoint = { point ->
-//                            val calculateLightingForPoint = viewModel.calculateLightingForPoint(
-//                                point = point,
-//                                triangle = transformedTriangle
-//                            )
-//                            calculateLightingForPoint
-//                        },
-//                        currentLightPos = currentLightPos.value
-                    )
+                    if (isTextureTurnedOn) {
+                        fillPolygonWithScanLine(
+                            triangle = transformedTriangle,
+                            calculateColorForPoint = { point ->
+                                val calculateLightingForPoint =
+                                    viewModel.calculateLightingForPointWithTexture(
+                                        point = point,
+                                        triangle = transformedTriangle
+                                    )
+                                calculateLightingForPoint
+                            },
+                            currentLightPos = currentLightPos.value
+                        )
+                    }
+                    else {
+                        fillPolygonWithScanLine(
+                            triangle = transformedTriangle,
+                            calculateColorForPoint = { point ->
+                                val calculateLightingForPoint = viewModel.calculateLightingForPoint(
+                                 point = point,
+                                 triangle = transformedTriangle
+                                )
+                                calculateLightingForPoint
+                            },
+                            currentLightPos = currentLightPos.value
+                        )
+                    }
                 }
             }
 
             //drawNormalsFromMap(mesh, viewModel.normalMap)
         }
 
-
-        // Canvas occupying 80% of the available width
-//        Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
-//            // Sort triangles by average Z depth for 3D-like rendering
-//            val sortedTriangles = mesh.triangles.sortedByDescending { triangle ->
-//                triangle.vertices.map { it.position.z }.average()
-//            }
-//
-//            // Draw each triangle
-//            sortedTriangles.forEach { triangle ->
-//                // Apply rotation to each vertex in the triangle
-//                val transformedVertices = triangle.vertices.map {
-//                    rotatePoint(it, rotationAlpha, rotationBeta)
-//                }
-//
-//                // Create a new Triangle with transformed vertices
-//                val transformedTriangle = Triangle(transformedVertices)
-//
-//                if(isMeshMode) {
-//                    fillPolygonWithScanLine(
-//                        triangle = transformedTriangle,
-//                        calculateColorForPoint = { point ->
-//                            viewModel.calculateLightingForPoint(
-//                                point = point,
-//                                triangle = transformedTriangle
-//                            )
-//                        },
-//                        currentLightPos = currentLightPos.value
-////                        texture = texture,
-////                        calculateUVForPoint = { x, y, vertices, triangleVertices ->
-////                            viewModel.interpolateUV(x, y, vertices, triangleVertices)
-////                        }
-//                    )
-//                }
-//                else {
-//                    drawTriangleOutline(transformedTriangle, Color.Black)
-//                }
-//            }
-//        }
-
-        // Updated control panel
         Column(
             modifier = Modifier
                 .fillMaxHeight()
                 .weight(0.2f)
-                .background(Color.LightGray),
-            verticalArrangement = Arrangement.Center,
+                .background(Color.LightGray)
+                .padding(4.dp), // Kompaktowe odstępy od krawędzi
+            verticalArrangement = Arrangement.spacedBy(4.dp) // Odstępy między elementami
         ) {
             // Alpha rotation slider
-            Text(
-                text = "Alpha Rotation (Z-axis)", fontSize = 14.sp,
-                modifier = Modifier.padding(4.dp)
-            )
+            Text("Alpha Rotation (Z-axis)", fontSize = 12.sp)
             Slider(
                 value = rotationAlpha,
                 onValueChange = { viewModel.updateRotation(it, rotationBeta) },
-                valueRange = -2*0.7853982f..2*0.7853982f,
-                modifier = Modifier.padding(4.dp)
+                valueRange = -2 * 0.7853982f..2 * 0.7853982f,
+                modifier = Modifier.height(32.dp) // Kompaktowa wysokość
             )
 
             // Beta rotation slider
-            Text(
-                text = "Beta Rotation (X-axis)", fontSize = 14.sp,
-                modifier = Modifier.padding(4.dp)
-            )
+            Text("Beta Rotation (X-axis)", fontSize = 12.sp)
             Slider(
                 value = rotationBeta,
                 onValueChange = { viewModel.updateRotation(rotationAlpha, it) },
-                valueRange = 0f..8*0.17453292f,
-                modifier = Modifier.padding(4.dp)
+                valueRange = 0f..8 * 0.17453292f,
+                modifier = Modifier.height(32.dp)
             )
 
             // Triangulation accuracy slider
-            Text(
-                text = "Triangulation Accuracy", fontSize = 14.sp,
-                modifier = Modifier.padding(4.dp)
-            )
+            Text("Triangulation Accuracy", fontSize = 12.sp)
             Slider(
                 value = triangulationAccuracy.toFloat(),
                 onValueChange = { viewModel.updateTriangulation(it.toInt()) },
                 valueRange = 1f..128f,
-                modifier = Modifier.padding(4.dp)
+                modifier = Modifier.height(32.dp)
             )
 
-            Text(
-                text = "k_d coefficient", fontSize = 14.sp,
-                modifier = Modifier.padding(4.dp)
-            )
+            // k_d slider
+            Text("k_d coefficient", fontSize = 12.sp)
             Slider(
                 value = k_d.value,
                 onValueChange = { viewModel.updateK_d(it) },
                 valueRange = 0f..1f,
-                modifier = Modifier.padding(4.dp)
+                modifier = Modifier.height(32.dp)
             )
 
-            Text(
-                text = "k_s coefficient", fontSize = 14.sp,
-                modifier = Modifier.padding(4.dp)
-            )
+            // k_s slider
+            Text("k_s coefficient", fontSize = 12.sp)
             Slider(
                 value = k_s.value,
                 onValueChange = { viewModel.updateK_s(it) },
                 valueRange = 0f..1f,
-                modifier = Modifier.padding(4.dp)
+                modifier = Modifier.height(32.dp)
             )
 
-            Text(
-                text = "m coefficient", fontSize = 14.sp,
-                modifier = Modifier.padding(4.dp)
-            )
+            // m slider
+            Text("m coefficient", fontSize = 12.sp)
             Slider(
-                value = k_d.value,
+                value = m.value,
                 onValueChange = { viewModel.updateM(it) },
                 valueRange = 1f..100f,
-                modifier = Modifier.padding(4.dp)
+                modifier = Modifier.height(32.dp)
             )
 
-            // Toggle light animation
-            Text(
-                text = "Light Animation", fontSize = 14.sp,
-                modifier = Modifier.padding(4.dp)
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(4.dp),
-            ) {
-                Text(text = if (isLightAnimationRunning) "On" else "Off")
+            // Light animation toggle
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Light Animation", fontSize = 12.sp)
                 Switch(
                     checked = isLightAnimationRunning,
                     onCheckedChange = { viewModel.toggleLightAnimation() }
                 )
             }
 
-            // Toggle between mesh and filled triangles
-            Text(
-                text = "Display Mode", fontSize = 14.sp,
-                modifier = Modifier.padding(8.dp)
-            )
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(8.dp),
-            ) {
-                Text(text = "Filled")
+            // Display mode toggle
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Display Mode: ", fontSize = 12.sp)
+                Text("Filled", fontSize = 12.sp)
                 Switch(
                     checked = isMeshMode,
-                    onCheckedChange = { isMeshMode = it }
+                    onCheckedChange = { isMeshMode = it },
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
-                Text(text = "Mesh")
+                Text("Mesh", fontSize = 12.sp)
+            }
+
+            // Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(
+                    onClick = {
+                        viewModel.updateNormalMapping(true, openFileDialog("src/normal-maps"))
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+                ) {
+                    Text("Choose Normal Map", fontSize = 10.sp)
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Button(
+                    onClick = {
+                        val color = openColorPicker()
+                        if (color != null) {
+                            viewModel.updateColor(color.toVector3())
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+                ) {
+                    Text("Choose Color", fontSize = 10.sp)
+                }
             }
 
             Button(
-                modifier = Modifier.padding(8.dp),
-                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray),
                 onClick = {
-                    viewModel.updateNormalMapping(true, openFileDialog("src/normal-maps"))
-                    //openFileDialog("src/normal-maps")
-                }
+                    val textureFile = openFileDialog("src/textures")
+                    if (textureFile != null) {
+                        viewModel.updateTexture(true, textureFile)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
             ) {
-                Text("Chose normal map")
+                Text("Choose Texture", fontSize = 10.sp)
             }
 
-        }
-    }
-
-    if (showDialog) {
-        Dialog(onDismissRequest = { showDialog = false }) {
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = MaterialTheme.shapes.medium,
-                color = MaterialTheme.colors.background
+            Button(
+                onClick = {
+                    viewModel.updateTexture(false, null)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("Choose a file", style = MaterialTheme.typography.h6)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(onClick = {
-                        selectedFile = openFileDialog("src/normal-maps")
-                        showDialog = false
-                    }) {
-                        Text("Open File Dialog")
-                    }
-                    Button(onClick = { showDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
+                Text("Turn off texture", fontSize = 10.sp)
+            }
+
+            Button(
+                onClick = {
+                    viewModel.updateNormalMapping(false, null)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Gray)
+            ) {
+                Text("Turn off normal mapping", fontSize = 10.sp)
             }
         }
     }
@@ -300,4 +254,15 @@ fun openFileDialog(defaultDirectory: String = System.getProperty("user.home")): 
     fileDialog.directory = defaultDirectory // Set the default directory
     fileDialog.isVisible = true
     return fileDialog.file?.let { fileDialog.directory + it }
+}
+
+fun openColorPicker(): java.awt.Color? {
+    return JColorChooser.showDialog(null, "Choose a Color", java.awt.Color.WHITE)
+}
+
+fun java.awt.Color.toVector3(): Vector3 {
+    return Vector3(
+        red / 255f,
+        green / 255f,
+        blue / 255f)
 }

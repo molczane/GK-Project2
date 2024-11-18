@@ -23,12 +23,8 @@ import kotlin.math.sin
 
 class BezierViewModel : ViewModel() {
 
-    // Stałe światła
-    //private val k_d: Float = 0.5f
-    //private val k_s: Float = 0.5f
     private val I_L: Vector3 = Vector3(1f, 1f, 1f)
-    private val I_0: Vector3 = Vector3(1f, 1f, 1f)
-    //private val m: Float = 1f
+    private var I_0: Vector3 = Vector3(3f, 3f, 3f)
 
     private val _k_d = MutableStateFlow(0.5f)
     val k_d: StateFlow<Float> = _k_d
@@ -48,7 +44,7 @@ class BezierViewModel : ViewModel() {
     private val _isLightAnimationRunning = MutableStateFlow(false)
     val isLightAnimationRunning: StateFlow<Boolean> = _isLightAnimationRunning
 
-    private val _isTextureTurnedOn = MutableStateFlow(true)
+    private val _isTextureTurnedOn = MutableStateFlow(false)
     val isTextureTurnedOn: StateFlow<Boolean> = _isTextureTurnedOn
 
     private val _isNormalMappingTurnedOn = MutableStateFlow(false)
@@ -66,7 +62,7 @@ class BezierViewModel : ViewModel() {
             startLightAnimation()
         }
         normalMap = invertNormals(loadNormalMap("src/normal-maps/brick_normalmap.png"))
-        texture = loadTexture("src/images/people-texture.png")
+        texture = loadTexture("src/textures/people-texture.png")
     }
 
     private fun startLightAnimation() {
@@ -125,18 +121,18 @@ class BezierViewModel : ViewModel() {
 //        Vector3(-5f, 5f, 0f), Vector3(-1.65f, 5f, 1f), Vector3(1.65f, 5f, 0.5f), Vector3(5f, 5f, 0f)
 //    )
 
-//    private val controlPoints = listOf(
-//        Vector3(-5f, -5f, 2f),  Vector3(-1.65f, -5f, -1f), Vector3(1.65f, -5f, 3f),   Vector3(5f, -5f, -2f),
-//        Vector3(-5f, -1.65f, -1f), Vector3(-1.65f, -1.65f, 4f), Vector3(1.65f, -1.65f, -3f), Vector3(5f, -1.65f, 2f),
-//        Vector3(-5f, 1.65f, 3f), Vector3(-1.65f, 1.65f, -4f), Vector3(1.65f, 1.65f, 5f), Vector3(5f, 1.65f, -1f),
-//        Vector3(-5f, 5f, -2f),  Vector3(-1.65f, 5f, 1f),  Vector3(1.65f, 5f, -2f),  Vector3(5f, 5f, 2f)
-//        )
     private val controlPoints = listOf(
-        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
-        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
-        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
-        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
-    )
+        Vector3(-5f, -5f, 2f),  Vector3(-1.65f, -5f, -1f), Vector3(1.65f, -5f, 3f),   Vector3(5f, -5f, -2f),
+        Vector3(-5f, -1.65f, -1f), Vector3(-1.65f, -1.65f, 4f), Vector3(1.65f, -1.65f, -3f), Vector3(5f, -1.65f, 2f),
+        Vector3(-5f, 1.65f, 3f), Vector3(-1.65f, 1.65f, -4f), Vector3(1.65f, 1.65f, 5f), Vector3(5f, 1.65f, -1f),
+        Vector3(-5f, 5f, -2f),  Vector3(-1.65f, 5f, 1f),  Vector3(1.65f, 5f, -2f),  Vector3(5f, 5f, 2f)
+        )
+//    private val controlPoints = listOf(
+//        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
+//        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
+//        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
+//        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
+//    )
 
 
 
@@ -300,9 +296,9 @@ class BezierViewModel : ViewModel() {
     fun updateRotation(alpha: Float, beta: Float) {
         _rotationAlpha.value = alpha
         _rotationBeta.value = beta
-        viewModelScope.launch {
-            _mesh.value = generateBezierMesh()
-        }
+//        viewModelScope.launch {
+//            _mesh.value = generateBezierMesh()
+//        }
     }
 
     fun updateTriangulation(accuracy: Int) {
@@ -465,11 +461,31 @@ class BezierViewModel : ViewModel() {
         _m.value = it
     }
 
+    fun updateColor(it: Vector3) {
+        I_0 = it
+    }
+
     fun updateNormalMapping(it: Boolean, file: String?) {
-        _isNormalMappingTurnedOn.value = it
-        normalMap = invertNormals(loadNormalMap(file!!))
+
+        if(file != null) {
+            normalMap = invertNormals(loadNormalMap(file))
+            _isNormalMappingTurnedOn.value = it
+        }
+        else {
+            _isNormalMappingTurnedOn.value = it
+        }
         viewModelScope.launch {
             _mesh.value = generateBezierMesh()
+        }
+    }
+
+    fun updateTexture(it: Boolean, file: String?) {
+        if(file != null) {
+            texture = loadTexture(file)
+            _isTextureTurnedOn.value = it
+        }
+        else {
+            _isTextureTurnedOn.value = it
         }
     }
 
