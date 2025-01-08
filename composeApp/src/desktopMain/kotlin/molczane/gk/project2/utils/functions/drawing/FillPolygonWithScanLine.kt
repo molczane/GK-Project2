@@ -12,7 +12,6 @@ import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 
-
 // basic version
 fun DrawScope.fillPolygonWithScanLine(
     triangle: Triangle,
@@ -48,7 +47,6 @@ fun DrawScope.fillPolygonWithScanLine(
 
     val activeEdgeTable = mutableListOf<Edge>()
 
-    val pixelBuffer = mutableListOf<Pair<Offset, Color>>()
     for (y in yMin until yMax) {
         activeEdgeTable.addAll(edgeTable.filter { it.yMin == y })
         activeEdgeTable.removeAll { it.yMax <= y }
@@ -79,11 +77,6 @@ fun DrawScope.fillPolygonWithScanLine(
             edge.xMin += edge.inverseSlope
         }
     }
-
-//    pixelBuffer.forEach { (offset, color) ->
-//        drawRect(color = color, topLeft = offset, size = Size(1f, 1f))
-//    }
-
 }
 
 // Interpolate a point using barycentric coordinates
@@ -113,87 +106,89 @@ private fun interpolateBarycentric(
     //return (v0 * w0) + (v1 * w1) + (v2 * w2)
 }
 
+fun DrawScope.fillPolygonWithScanLine(
+    triangle: Triangle,
+    scale: Float = 100f,
+    calculateColorForPoint: (point: Vector3) -> Color,
+    currentLightPos: Vector3,
+    zBuffer: Array<FloatArray> // Z-buffer passed as a 2D array
+) {
+    val canvasCenterX = size.width / 2
+    val canvasCenterY = size.height / 2
+
+    val vertices = listOf(
+        triangle.vertices[0].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
+        triangle.vertices[1].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
+        triangle.vertices[2].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f)
+    )
+
+    val sortedVertices = vertices.sortedBy { it.y }
+    val yMin = max(0, sortedVertices.first().y.toInt())
+    val yMax = min(size.height.toInt() - 1, sortedVertices.last().y.toInt())
+
+    val edgeTable = mutableListOf<Edge>()
+    for (i in sortedVertices.indices) {
+        val v1 = sortedVertices[i]
+        val v2 = sortedVertices[(i + 1) % sortedVertices.size]
+        if (v1.y != v2.y) {
+            val ymin = floor(min(v1.y, v2.y)).toInt()
+            val ymax = ceil(max(v1.y, v2.y)).toInt()
+            val xMin = if (v1.y < v2.y) v1.x else v2.x
+            val inverseSlope = (v2.x - v1.x) / (v2.y - v1.y)
+            edgeTable.add(Edge(ymin, ymax, xMin, inverseSlope))
+        }
+    }
+
+    val activeEdgeTable = mutableListOf<Edge>()
+
+    for (y in yMin until yMax) {
+        activeEdgeTable.addAll(edgeTable.filter { it.yMin == y })
+        activeEdgeTable.removeAll { it.yMax <= y }
+        activeEdgeTable.sortBy { it.xMin }
+
+        for (i in activeEdgeTable.indices step 1) {
+            if (i + 1 < activeEdgeTable.size) {
+                val xStart = max(0, ceil(activeEdgeTable[i].xMin).toInt())
+                val xEnd = min(size.width.toInt() - 1, floor(activeEdgeTable[i + 1].xMin).toInt())
+
+                for (x in xStart..xEnd) {
+                    val interpolatedPoint = interpolateBarycentric(
+                        x.toFloat(),
+                        y.toFloat(),
+                        vertices,
+                        triangle.vertices
+                    )
+
+                    // Z-buffer test
+                    if (interpolatedPoint.z < zBuffer[y][x]) {
+                        zBuffer[y][x] = interpolatedPoint.z // Update Z-buffer
+                        val pointColor = calculateColorForPoint(interpolatedPoint)
+                        drawRect(
+                            color = pointColor,
+                            topLeft = Offset(x.toFloat(), y.toFloat()),
+                            size = Size(1f, 1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        for (edge in activeEdgeTable) {
+            edge.xMin += edge.inverseSlope
+        }
+    }
+}
+
+// Ensure Z-buffer initialization before rendering
+fun initializeZBuffer(width: Int, height: Int): Array<FloatArray> {
+    val zBuffer = Array(height) { FloatArray(width) }
+    for (y in 0 until height) {
+        for (x in 0 until width) {
+            zBuffer[y][x] = Float.POSITIVE_INFINITY // Initialize to farthest depth
+        }
+    }
+    return zBuffer
+}
+
 // Edge data structure
 data class Edge(val yMin: Int, val yMax: Int, var xMin: Float, val inverseSlope: Float)
-
-// coroutines used in this function
-//fun DrawScope.fillPolygonWithScanLine(
-//    triangle: Triangle,
-//    scale: Float = 100f,
-//    calculateColorForPoint: (point: Vector3) -> Color,
-//    time: Float
-//) {
-//    val canvasCenterX = size.width / 2
-//    val canvasCenterY = size.height / 2
-//
-//    val vertices = listOf(
-//        triangle.vertices[0].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
-//        triangle.vertices[1].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f),
-//        triangle.vertices[2].position * scale + Vector3(canvasCenterX, canvasCenterY, 0f)
-//    )
-//
-//    val sortedVertices = vertices.sortedBy { it.y }
-//    val yMin = sortedVertices.first().y.toInt()
-//    val yMax = sortedVertices.last().y.toInt()
-//
-//    val edgeTable = mutableListOf<Edge>()
-//    for (i in sortedVertices.indices) {
-//        val v1 = sortedVertices[i]
-//        val v2 = sortedVertices[(i + 1) % sortedVertices.size]
-//        if (v1.y != v2.y) {
-//            val ymin = floor(min(v1.y, v2.y)).toInt()
-//            val ymax = ceil(max(v1.y, v2.y)).toInt()
-//            val xMin = if (v1.y < v2.y) v1.x else v2.x
-//            val inverseSlope = (v2.x - v1.x) / (v2.y - v1.y)
-//            edgeTable.add(Edge(ymin, ymax, xMin, inverseSlope))
-//        }
-//    }
-//
-//    val activeEdgeTable = mutableListOf<Edge>()
-//
-//    runBlocking {
-//        // Lista korutyn dla równoległych zadań
-//        val tasks = mutableListOf<Deferred<List<Pair<Offset, Color>>>>()
-//
-//        for (y in yMin until yMax) {
-//            activeEdgeTable.addAll(edgeTable.filter { it.yMin == y })
-//            activeEdgeTable.removeAll { it.yMax <= y }
-//            activeEdgeTable.sortBy { it.xMin }
-//
-//            if (activeEdgeTable.size < 2) continue
-//
-//            val xStart = ceil(activeEdgeTable[0].xMin).toInt()
-//            val xEnd = floor(activeEdgeTable[1].xMin).toInt()
-//
-//            // Przetwarzaj obliczenia wierszy równolegle
-//            tasks.add(async(Dispatchers.Default) {
-//                val pixels = mutableListOf<Pair<Offset, Color>>()
-//
-//                for (x in xStart..xEnd) {
-//                    val interpolatedPoint = interpolateBarycentric(
-//                        x.toFloat(),
-//                        y.toFloat(),
-//                        vertices,
-//                        triangle.vertices
-//                    )
-//                    val pointColor = calculateColorForPoint(interpolatedPoint)
-//                    pixels.add(Offset(x.toFloat(), y.toFloat()) to pointColor)
-//                }
-//
-//                pixels
-//            })
-//
-//            for (edge in activeEdgeTable) {
-//                edge.xMin += edge.inverseSlope
-//            }
-//        }
-//
-//        // Czekaj na zakończenie wszystkich korutyn
-//        val pixelBuffer = tasks.awaitAll().flatten()
-//
-//        // Rysuj wszystkie przetworzone piksele
-//        pixelBuffer.forEach { (offset, color) ->
-//            drawRect(color = color, topLeft = offset, size = Size(1f, 1f))
-//        }
-//    }
-//}

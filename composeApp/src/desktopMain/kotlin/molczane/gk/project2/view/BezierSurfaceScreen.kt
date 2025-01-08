@@ -44,9 +44,18 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     val isBlueReflectorTurnedOn = viewModel.isBlueLightTurnedOn.collectAsState()
 
     Row(modifier = Modifier.fillMaxSize()) {
+        val pyramidMesh = viewModel.generatePyramidMesh()
 
         Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
-            val sortedTriangles = mesh.triangles.sortedByDescending { triangle ->
+            val canvasWidth = size.width.toInt()
+            val canvasHeight = size.height.toInt()
+
+            // Initialize the Z-buffer
+            val zBuffer = Array(canvasHeight) { FloatArray(canvasWidth) { Float.POSITIVE_INFINITY } }
+
+            val combinedTriangles = pyramidMesh.triangles + mesh.triangles
+
+            val sortedTriangles = combinedTriangles.sortedByDescending { triangle ->
                 triangle.vertices.map { it.position.z }.average()
             }
 
@@ -87,14 +96,16 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                     else {
                         fillPolygonWithScanLine(
                             triangle = transformedTriangle,
+                            scale = 100f,
                             calculateColorForPoint = { point ->
                                 val calculateLightingForPoint = viewModel.calculateLightingForPoint(
-                                 point = point,
-                                 triangle = transformedTriangle
+                                    point = point,
+                                    triangle = transformedTriangle
                                 )
                                 calculateLightingForPoint
                             },
-                            currentLightPos = currentLightPos.value
+                            currentLightPos = currentLightPos.value,
+                            zBuffer = zBuffer // Pass Z-buffer
                         )
                     }
                 }
