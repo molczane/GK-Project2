@@ -405,9 +405,15 @@ class BezierViewModel : ViewModel() {
         }
         //val resultColor = diffuseRed + specularRed + diffuseBlue + specularBlue + diffuseGreen + specularGreen
 
-        val r = (resultColor.x.coerceIn(0f, 1f) * 255).toInt()
-        val g = (resultColor.y.coerceIn(0f, 1f) * 255).toInt()
-        val b = (resultColor.z.coerceIn(0f, 1f) * 255).toInt()
+        // resultColor += Vector3(triangle.baseColor.red/256, triangle.baseColor.green/256, triangle.baseColor.blue/256)
+
+        // Add triangle's base color to the lighting
+        val baseColor = Vector3(
+            triangle.baseColor.red,
+            triangle.baseColor.green,
+            triangle.baseColor.blue
+        )
+        resultColor *= baseColor // Modulate the result with the base color
 
         val colorFromWhite = calculateLightingForPointNormal(point, triangle)
 
@@ -450,6 +456,60 @@ class BezierViewModel : ViewModel() {
         val resultColor = diffuse + specular
 
         // Ogranicz wartości do zakresu [0, 1], a następnie przeskaluj na [0, 255]
+        val r = (resultColor.x.coerceIn(0f, 1f) * 255).toInt()
+        val g = (resultColor.y.coerceIn(0f, 1f) * 255).toInt()
+        val b = (resultColor.z.coerceIn(0f, 1f) * 255).toInt()
+
+        return Color(r, g, b)
+    }
+
+    fun calculateLightingForPointPyramid(
+        point: Vector3,
+        triangle: Triangle
+    ): Color {
+        // Light position
+        val lightPos = _lightPos.value
+
+        // Interpolated normal using barycentric coordinates
+        val interpolatedNormal = interpolateNormal(point, triangle)
+        val N = interpolatedNormal.normalize()
+
+        // Light direction
+        val L = (lightPos - point).normalize()
+
+        // View direction (assuming the observer is at a fixed camera position)
+        val V = Vector3(0f, 0f, -5f).normalize()
+
+        // Reflection vector
+        val R = (N * (2f * N.dot(L)) - L).normalize()
+
+        // Diffuse and specular components
+        val cosNL = maxOf(N.dot(L), 0f)
+        val cosVR = maxOf(V.dot(R), 0f)
+
+        val diffuse = I_0 * k_d.value * I_L * cosNL
+        val specular = I_0 * k_s.value * I_L * cosVR.pow(m.value)
+
+        // Interpolate UV coordinates using barycentric interpolation
+        val interpolatedUV = interpolateUV(point, triangle.vertices)
+
+        // Map UV coordinates to texture coordinates
+        val texWidth = texture.size
+        val texHeight = texture[0].size
+        val texU = (interpolatedUV.x * (texWidth - 1)).toInt().coerceIn(0, texWidth - 1)
+        val texV = (interpolatedUV.y * (texHeight - 1)).toInt().coerceIn(0, texHeight - 1)
+
+        // Sample texture color
+        val textureColor = triangle.baseColor
+
+        // Combine texture color with lighting
+        val resultColor = Vector3(
+            textureColor.red * (diffuse.x + specular.x),
+            textureColor.green * (diffuse.y + specular.y),
+            textureColor.blue * (diffuse.z + specular.z)
+        )
+
+        // Clamp values to [0, 1] and convert to 255 scale
         val r = (resultColor.x.coerceIn(0f, 1f) * 255).toInt()
         val g = (resultColor.y.coerceIn(0f, 1f) * 255).toInt()
         val b = (resultColor.z.coerceIn(0f, 1f) * 255).toInt()
@@ -684,10 +744,12 @@ class BezierViewModel : ViewModel() {
         // Define the base as two triangles
         val baseTriangles = listOf(
             Triangle(
-                listOf(baseVertices[0], baseVertices[1], baseVertices[2])
+                listOf(baseVertices[0], baseVertices[1], baseVertices[2]),
+                baseColor = Color.Cyan
             ),
             Triangle(
-                listOf(baseVertices[0], baseVertices[2], baseVertices[3])
+                listOf(baseVertices[0], baseVertices[2], baseVertices[3]),
+                baseColor = Color.Cyan
             )
         )
 
@@ -698,33 +760,95 @@ class BezierViewModel : ViewModel() {
                     baseVertices[0],
                     baseVertices[1],
                     topVertex.copy(normal = (baseVertices[1].position - topVertex.position).cross(baseVertices[0].position - topVertex.position).normalize())
-                )
+                ),
+                baseColor = Color.Magenta
             ),
             Triangle(
                 listOf(
                     baseVertices[1],
                     baseVertices[2],
                     topVertex.copy(normal = (baseVertices[2].position - topVertex.position).cross(baseVertices[1].position - topVertex.position).normalize())
-                )
+                ),
+                baseColor = Color.Yellow
             ),
             Triangle(
                 listOf(
                     baseVertices[2],
                     baseVertices[3],
                     topVertex.copy(normal = (baseVertices[3].position - topVertex.position).cross(baseVertices[2].position - topVertex.position).normalize())
-                )
+                ),
+                baseColor = Color.Green
             ),
             Triangle(
                 listOf(
                     baseVertices[3],
                     baseVertices[0],
                     topVertex.copy(normal = (baseVertices[0].position - topVertex.position).cross(baseVertices[3].position - topVertex.position).normalize())
-                )
+                ),
+                baseColor = Color.Red
             )
         )
 
         return Mesh(baseTriangles + wallTriangles)
     }
+
+//    fun generatePyramidMesh(): Mesh {
+//        val baseVertices = listOf(
+//            Vector3(-2f, -2f, 0f), // Bottom-left
+//            Vector3(2f, -2f, 0f),  // Bottom-right
+//            Vector3(2f, 2f, 0f),   // Top-right
+//            Vector3(-2f, 2f, 0f)   // Top-left
+//        )
+//
+//        val topVertex = Vector3(0f, 0f, 4f) // Pyramid tip
+//
+//        // Assign unique colors for each wall
+//        val wallColors = listOf(
+//            Color.Red,
+//            Color.Green,
+//            Color.Blue,
+//            Color.Yellow
+//        )
+//
+//        // Create triangles for the pyramid walls
+//        val triangles = mutableListOf<Triangle>()
+//        for (i in baseVertices.indices) {
+//            val nextIndex = (i + 1) % baseVertices.size
+//            val wallTriangle = Triangle(
+//                vertices = listOf(
+//                    Vertex(baseVertices[i], normal = Vector3(0f, 0f, 1f), uv = Vector3(0f, 0f, 0f)),
+//                    Vertex(baseVertices[nextIndex], normal = Vector3(0f, 0f, 1f), uv = Vector3(1f, 0f, 0f)),
+//                    Vertex(topVertex, normal = Vector3(0f, 0f, 1f), uv = Vector3(0.5f, 1f, 0f))
+//                ),
+//                baseColor = wallColors[i] // Assign a unique color to the wall
+//            )
+//            triangles.add(wallTriangle)
+//        }
+//
+//        // Create triangles for the pyramid base
+//        val baseTriangle1 = Triangle(
+//            vertices = listOf(
+//                Vertex(baseVertices[0], normal = Vector3(0f, -1f, 0f), uv = Vector3(0f, 0f, 0f)),
+//                Vertex(baseVertices[1], normal = Vector3(0f, -1f, 0f), uv = Vector3(1f, 0f, 0f)),
+//                Vertex(baseVertices[2], normal = Vector3(0f, -1f, 0f), uv = Vector3(1f, 1f, 0f))
+//            ),
+//            baseColor = Color.Gray // Assign a neutral color for the base
+//        )
+//
+//        val baseTriangle2 = Triangle(
+//            vertices = listOf(
+//                Vertex(baseVertices[0], normal = Vector3(0f, -1f, 0f), uv = Vector3(0f, 0f, 0f)),
+//                Vertex(baseVertices[2], normal = Vector3(0f, -1f, 0f), uv = Vector3(1f, 1f, 0f)),
+//                Vertex(baseVertices[3], normal = Vector3(0f, -1f, 0f), uv = Vector3(0f, 1f, 0f))
+//            ),
+//            baseColor = Color.Gray
+//        )
+//
+//        triangles.addAll(listOf(baseTriangle1, baseTriangle2))
+//
+//        return Mesh(triangles)
+//    }
+
 
     private val _pyramidMesh = MutableStateFlow(generatePyramidMesh()) // State for the pyramid mesh
     val pyramidMesh: StateFlow<Mesh> = _pyramidMesh

@@ -62,7 +62,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                 val transformedVertices = triangle.vertices.map {
                     rotatePoint(it, rotationAlpha, rotationBeta)
                 }
-                Triangle(transformedVertices)
+                Triangle(transformedVertices, triangle.baseColor)
             }
 
             // Draw the transformed normals if needed
@@ -97,7 +97,7 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
                             triangle = transformedTriangle,
                             scale = 100f,
                             calculateColorForPoint = { point ->
-                                val calculateLightingForPoint = viewModel.calculateLightingForPoint(
+                                val calculateLightingForPoint = viewModel.calculateLightingForPointPyramid(
                                     point = point,
                                     triangle = transformedTriangle
                                 )
