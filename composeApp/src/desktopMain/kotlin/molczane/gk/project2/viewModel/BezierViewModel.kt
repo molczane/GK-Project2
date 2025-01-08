@@ -18,6 +18,7 @@ import molczane.gk.project2.utils.functions.loadNormalMap
 import molczane.gk.project2.utils.functions.interpolateNormal
 import molczane.gk.project2.utils.functions.loadTexture
 import molczane.gk.project2.utils.functions.times
+import java.io.File
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -92,12 +93,15 @@ class BezierViewModel : ViewModel() {
 
     var texture: Array<Array<Color>>
 
+    val controlPoints: List<Vector3>
+
     init {
         if(_isLightAnimationRunning.value) {
             startLightAnimation()
         }
         normalMap = invertNormals(loadNormalMap("src/normal-maps/brick_normalmap.png"))
         texture = loadTexture("src/textures/people-texture.png")
+        controlPoints = parseBezierSurface("src/points/bezier_surface_points.txt")
     }
 
     private fun startLightAnimation() {
@@ -156,14 +160,12 @@ class BezierViewModel : ViewModel() {
 //        Vector3(-5f, 1.65f, 3f), Vector3(-1.65f, 1.65f, -4f), Vector3(1.65f, 1.65f, 5f), Vector3(5f, 1.65f, -1f),
 //        Vector3(-5f, 5f, -2f),  Vector3(-1.65f, 5f, 1f),  Vector3(1.65f, 5f, -2f),  Vector3(5f, 5f, 2f)
 //        )
-    private val controlPoints = listOf(
-        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
-        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
-        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
-        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
-    )
-
-
+//    private val controlPoints = listOf(
+//        Vector3(-5f, -5f, 3f),      Vector3(-1.65f, -5f, 0.5f),   Vector3(1.65f, -5f, 0.5f),   Vector3(5f, -5f, 3f),
+//        Vector3(-5f, -1.65f, 0.5f), Vector3(-1.65f, -1.65f, 1f),  Vector3(1.65f, -1.65f, 1f),  Vector3(5f, -1.65f, 0.5f),
+//        Vector3(-5f, 1.65f, 0.5f),  Vector3(-1.65f, 1.65f, 1f),   Vector3(1.65f, 1.65f, 1f),   Vector3(5f, 1.65f, 0.5f),
+//        Vector3(-5f, 5f, 3f),       Vector3(-1.65f, 5f, 0.5f),    Vector3(1.65f, 5f, 0.5f),    Vector3(5f, 5f, 3f)
+//    )
 
     private val _rotationAlpha = MutableStateFlow(0f)
     val rotationAlpha: StateFlow<Float> = _rotationAlpha
@@ -643,103 +645,15 @@ class BezierViewModel : ViewModel() {
     fun updateBlueReflector(it: Boolean) {
         _isBlueLightTurnedOn.value = it
     }
-
-    // To be uncommented when the file is ready
-    // val points: List<Vertex> = parseBezierSurface("src/points/bezierSurface.txt")
 }
 
-// async version of genereateBezierMesh()
-//    private suspend fun generateBezierMesh(): Mesh {
-//        val step = 1f / _triangulationAccuracy.value
-//        val tasks = mutableListOf<Deferred<List<Triangle>>>()
-//
-//        coroutineScope {
-//            for (i in 0 until _triangulationAccuracy.value) {
-//                tasks.add(async(Dispatchers.Default) {
-//                    val localTriangles = mutableListOf<Triangle>()
-//                    for (j in 0 until _triangulationAccuracy.value) {
-//                        val u = i * step
-//                        val v = j * step
-//
-//                        // Compute positions of vertices
-//                        val p1 = interpolateBezierSurface(u, v)
-//                        val p2 = interpolateBezierSurface(u + step, v)
-//                        val p3 = interpolateBezierSurface(u, v + step)
-//                        val p4 = interpolateBezierSurface(u + step, v + step)
-//
-//                        // Compute tangent vectors for normals
-//                        val tangentU1 = calculateTangentU(u, v)
-//                        val tangentV1 = calculateTangentV(u, v)
-//                        val normal1 = tangentU1.cross(tangentV1).normalize()
-//
-//                        val tangentU2 = calculateTangentU(u + step, v)
-//                        val tangentV2 = calculateTangentV(u + step, v)
-//                        val normal2 = tangentU2.cross(tangentV2).normalize()
-//
-//                        val tangentU3 = calculateTangentU(u, v + step)
-//                        val tangentV3 = calculateTangentV(u, v + step)
-//                        val normal3 = tangentU3.cross(tangentV3).normalize()
-//
-//                        val tangentU4 = calculateTangentU(u + step, v + step)
-//                        val tangentV4 = calculateTangentV(u + step, v + step)
-//                        val normal4 = tangentU4.cross(tangentV4).normalize()
-//
-//                        // Create vertices with normals and UVs
-//                        val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
-//                        val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
-//                        val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
-//                        val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
-//
-//                        // Create two triangles for each quad
-//                        localTriangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
-//                        localTriangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
-//                    }
-//                    localTriangles
-//                })
-//            }
-//        }
-//
-//        // Czekaj na wyniki wszystkich zadań
-//        val triangles = runBlocking {
-//            tasks.awaitAll().flatten()
-//        }
-//
-//        return Mesh(triangles)
-//    }
+fun parseBezierSurface(filePath: String): List<Vector3> {
+    // Read lines from the file
+    val lines = File(filePath).readLines()
 
-// normals from map
-//    private fun generateBezierMesh(): Mesh {
-//        val triangles = mutableListOf<Triangle>()
-//        val step = 1f / _triangulationAccuracy.value
-//
-//        for (i in 0 until _triangulationAccuracy.value) {
-//            for (j in 0 until _triangulationAccuracy.value) {
-//                val u = i * step
-//                val v = j * step
-//
-//                // Compute vertex positions
-//                val p1 = interpolateBezierSurface(u, v)
-//                val p2 = interpolateBezierSurface(u + step, v)
-//                val p3 = interpolateBezierSurface(u, v + step)
-//                val p4 = interpolateBezierSurface(u + step, v + step)
-//
-//                // Interpolate normals from the normal map
-//                val normal1 = interpolateNormalFromMap(u, v, normalMap)
-//                val normal2 = interpolateNormalFromMap(u + step, v, normalMap)
-//                val normal3 = interpolateNormalFromMap(u, v + step, normalMap)
-//                val normal4 = interpolateNormalFromMap(u + step, v + step, normalMap)
-//
-//                // Create vertices with interpolated normals
-//                val vertex1 = Vertex(position = p1, normal = normal1, uv = Vector3(u, v, 0f))
-//                val vertex2 = Vertex(position = p2, normal = normal2, uv = Vector3(u + step, v, 0f))
-//                val vertex3 = Vertex(position = p3, normal = normal3, uv = Vector3(u, v + step, 0f))
-//                val vertex4 = Vertex(position = p4, normal = normal4, uv = Vector3(u + step, v + step, 0f))
-//
-//                // Create two triangles for each quad
-//                triangles.add(Triangle(listOf(vertex1, vertex2, vertex3)))
-//                triangles.add(Triangle(listOf(vertex2, vertex4, vertex3)))
-//            }
-//        }
-//
-//        return Mesh(triangles)
-//    }
+    // Parse each line into a Vertex
+    return lines.map { line ->
+        val components = line.split(" ").map { it.toFloat() } // Split line into x, y, z
+        Vector3(components[0], components[1], components[2])  // Create a Vertex object
+    }
+}
