@@ -3,6 +3,7 @@ package molczane.gk.project2.viewModel
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sun.jdi.event.VMDeathEvent
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -502,12 +503,23 @@ class BezierViewModel : ViewModel() {
         // Sample texture color
         val textureColor = triangle.baseColor
 
+        val resultColor: Vector3
+
         // Combine texture color with lighting
-        val resultColor = Vector3(
-            textureColor.red * (diffuse.x + specular.x),
-            textureColor.green * (diffuse.y + specular.y),
-            textureColor.blue * (diffuse.z + specular.z)
-        )
+        if(textureColor != Color.White) {
+            resultColor = Vector3(
+                textureColor.red /* * (diffuse.x + specular.x) */,
+                textureColor.green /* * (diffuse.y + specular.y) */,
+                textureColor.blue /* * (diffuse.z + specular.z) */
+            )
+        }
+        else {
+            resultColor = Vector3(
+                textureColor.red * (diffuse.x + specular.x),
+                textureColor.green * (diffuse.y + specular.y),
+                textureColor.blue * (diffuse.z + specular.z)
+            )
+        }
 
         // Clamp values to [0, 1] and convert to 255 scale
         val r = (resultColor.x.coerceIn(0f, 1f) * 255).toInt()
@@ -879,7 +891,7 @@ class BezierViewModel : ViewModel() {
                 val rotatedPosition = rotateX(vertex.position, angle)
                 vertex.copy(position = rotatedPosition) // Update position while retaining normals and UVs
             }
-            Triangle(rotatedVertices)
+            Triangle(rotatedVertices, triangle.baseColor)
         }
 
         return Mesh(rotatedTriangles)
