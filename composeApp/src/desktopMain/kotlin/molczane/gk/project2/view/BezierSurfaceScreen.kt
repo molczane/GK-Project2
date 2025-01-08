@@ -38,14 +38,13 @@ fun BezierSurfaceScreen(viewModel: BezierViewModel) {
     val m = viewModel.m.collectAsState()
 
     val mesh by viewModel.mesh.collectAsState()
+    val pyramidMesh by viewModel.pyramidMesh.collectAsState() // Collect rotating pyramid
 
     val isRedReflectorTurnedOn = viewModel.isRedLightTurnedOn.collectAsState()
     val isGreenReflectorTurnedOn = viewModel.isGreenLightTurnedOn.collectAsState()
     val isBlueReflectorTurnedOn = viewModel.isBlueLightTurnedOn.collectAsState()
 
     Row(modifier = Modifier.fillMaxSize()) {
-        val pyramidMesh = viewModel.generatePyramidMesh()
-
         Canvas(modifier = Modifier.fillMaxHeight().weight(0.8f)) {
             val canvasWidth = size.width.toInt()
             val canvasHeight = size.height.toInt()
