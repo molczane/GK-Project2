@@ -725,6 +725,52 @@ class BezierViewModel : ViewModel() {
 
         return Mesh(baseTriangles + wallTriangles)
     }
+
+    private val _pyramidMesh = MutableStateFlow(generatePyramidMesh()) // State for the pyramid mesh
+    val pyramidMesh: StateFlow<Mesh> = _pyramidMesh
+
+    private var rotationAngle = 0f // Current rotation angle around the X-axis
+
+    init {
+        startPyramidRotation()
+    }
+
+    // Start the coroutine to rotate the pyramid
+    private fun startPyramidRotation() {
+        viewModelScope.launch {
+            while (true) {
+                delay(16L) // Approximately 60 FPS (16 ms per frame)
+                rotationAngle += 0.02f // Increment rotation angle (adjust speed here)
+                _pyramidMesh.value = generateRotatedPyramidMesh(rotationAngle)
+            }
+        }
+    }
+
+    // Generate the rotated pyramid mesh
+    private fun generateRotatedPyramidMesh(angle: Float): Mesh {
+        val originalMesh = generatePyramidMesh()
+
+        val rotatedTriangles = originalMesh.triangles.map { triangle ->
+            val rotatedVertices = triangle.vertices.map { vertex ->
+                val rotatedPosition = rotateX(vertex.position, angle)
+                vertex.copy(position = rotatedPosition) // Update position while retaining normals and UVs
+            }
+            Triangle(rotatedVertices)
+        }
+
+        return Mesh(rotatedTriangles)
+    }
+
+    // Rotate a point around the X-axis
+    private fun rotateX(point: Vector3, angle: Float): Vector3 {
+        val cosAngle = kotlin.math.cos(angle)
+        val sinAngle = kotlin.math.sin(angle)
+        return Vector3(
+            x = point.x,
+            y = point.y * cosAngle - point.z * sinAngle,
+            z = point.y * sinAngle + point.z * cosAngle
+        )
+    }
 }
 
 fun parseBezierSurface(filePath: String): List<Vector3> {
